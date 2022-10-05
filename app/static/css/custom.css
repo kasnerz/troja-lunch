@@ -1,0 +1,11 @@
+* {
+    box-sizing: border-box;
+}
+body {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 20px;
+    font: 18px/1.4 'Open Sans', sans-serif;
+    color: #495057;
+    background-color: #ffffff;
+}

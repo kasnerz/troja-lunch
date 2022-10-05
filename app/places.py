@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
-import feedparser
 import requests
 import html
 import datetime
 import textract
+import logging
 import re
 import os
+import dateparser
 from bs4 import BeautifulSoup as bs
 from collections import defaultdict
+from .translate import translate
+
+
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%H:%M:%S')
+logger = logging.getLogger(__name__)
+
 
 class Menu:
     def __init__(self, dishes, soups, date=None, place=None):
@@ -15,7 +22,15 @@ class Menu:
         self.soups = soups        # maybe not that beautiful
         self.date = date
         self.place = place
+    
+    def translate(self):
+        logger.info(f"Translating menu for {self.place}")
+        for x in self.dishes:
+            x.translate()
 
+        for x in self.soups:
+            x.translate()
+    
     def __str__(self):
         return str(self.__dict__)
 
@@ -23,8 +38,16 @@ class Menu:
 class Dish:
     def __init__(self, name, type="main", price=None):
         self.name = name
+        self.name_en = name
         self.type = type
         self.price = price
+    
+    def translate(self):
+        try:
+            self.name_en = translate(self.name)
+        except Exception as e:
+            logger.error(f"Cannot translate dish {self.name}")
+            logger.exception(e)
 
     def __str__(self):
         return str(self.__dict__)
@@ -39,6 +62,7 @@ class Place:
     
 class MenzaTroja(Place):
     def __init__(self):
+        self.name = "Menza Troja"
         self.url = "https://kamweb.ruk.cuni.cz/webkredit/Api/Ordering/Rss?canteenId=27&locale=cs"
 
     def get_menu(self):
@@ -50,7 +74,8 @@ class MenzaTroja(Place):
 
         for day in content.find_all("item"):
             menu_date = day.find("title").text
-
+            menu_date = dateparser.parse(menu_date).date()
+        
             menu_date_detail = day.find("div")
             lists = menu_date_detail.find_all("ul")
 
@@ -63,7 +88,7 @@ class MenzaTroja(Place):
                 dish_menu = lists[0]
 
             dishes = [Dish(el.text.strip()) for el in dish_menu.find_all("li")]
-            m = Menu(dishes, soup, date=menu_date, place="menza_troja")
+            m = Menu(dishes, soups=[soup], date=menu_date, place=self.name)
             menu.append(m)
 
         return menu
@@ -72,6 +97,7 @@ class MenzaTroja(Place):
 
 class BufetTroja(Place):
     def __init__(self):
+        self.name = "Bufet Troja"
         self.url = "https://aurora.troja.mff.cuni.cz/pavlu/bufet.pdf"
     
     def _is_food(self, s):
@@ -101,7 +127,7 @@ class BufetTroja(Place):
 
                 menu_date = re.sub(r"[^\d\.]", "", i)
                 current_date = datetime.datetime.strptime(menu_date, "%d.%m.%Y").date()
-                m = Menu(dishes=[], soups=[], date=current_date, place="bufet_troja")
+                m = Menu(dishes=[], soups=[], date=current_date, place=self.name)
 
             elif self._is_soup(i) and m is not None:
                 soup = Dish(i.strip(), type="soup")
@@ -121,6 +147,7 @@ class BufetTroja(Place):
 
 class CastleRestaurant(Place):
     def __init__(self):
+        self.name = "Castle Restaurant"
         # the menu fetched by JS at https://www.castle-restaurant.cz/poledni-menu
         self.url = "https://www.prazskejrej.cz/menu-na-web/castle-residence"
     
@@ -141,7 +168,7 @@ class CastleRestaurant(Place):
             soup = Dish(dishes[0], type="soup")
             dishes = [Dish(x) for x in dishes[1:]]
             
-            m = Menu(dishes, soups=[soup], date=menu_date, place="castle_restaurant")
+            m = Menu(dishes, soups=[soup], date=menu_date, place=self.name)
             menu.append(m)
         
         return menu

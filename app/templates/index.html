@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="./static/css/custom.css">
+<link rel="shortcut icon" href="./static/img/favicon.ico">
+<meta name="viewport" content = "width=device-width, initial-scale=1.0">
+</head>
+
+
+<body class="body">
+    <h1><img src="./static/img/icon.png" style="display: inline; max-width: 48px"> troja-cfm-bot</h1> 
+    {{ date }}
+    
+    {% for place in overview %}
+    <div id={{ place.name }} class="place">
+        <h2>{{ place.name }}</h2>
+        <h3>Soup:</h3>
+        <ul>
+            {% for x in place.soups %}
+            <li>{{ x.name }}<br><small><i>{{ x.name_en }}</i></small></li>
+            {% endfor %}
+        </ul>
+        <h3>Meals:</h3>
+        <ul>
+            {% for x in place.dishes %}
+            <li>{{ x.name }}<br><small><i>{{ x.name_en }}</i></small></li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+
+    <small>Last update: {{ last_update }} </small>
+    
+</body>
