@@ -16,9 +16,14 @@ def parse_args():
 
     return parser.parse_args()
 
+def main():
+    args = parse_args()
+    main(args)
+    return app
+
+
 if __name__ == '__main__':
     args = parse_args()
     main(args)
     
     app.run(debug=True)
-    

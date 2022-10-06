@@ -7,5 +7,10 @@ body {
     padding: 0 20px;
     font: 18px/1.4 'Open Sans', sans-serif;
     color: #495057;
-    background-color: #ffffff;
+    background-color: #FFFFFF;
+    /*background-color: #F5F3D4;*/
+}
+
+#footnote {
+    font-size: 15px
 }
