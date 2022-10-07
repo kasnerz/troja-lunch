@@ -9,11 +9,10 @@ from datetime import timedelta
 from flask import Flask, render_template, jsonify, request, url_for
 from collections import defaultdict
 from slack_sdk import WebClient
+from flask_apscheduler import APScheduler
 
 from .places import Menu, Dish
 from .places import MenzaTroja, BufetTroja, CastleRestaurant
-
-from flask_apscheduler import APScheduler
 
 scheduler = APScheduler()
 app = Flask(__name__)
@@ -23,11 +22,12 @@ logger = logging.getLogger(__name__)
 
 SLACK_SIGNING_SECRET = os.environ['SLACK_SIGNING_SECRET']
 slack_token = os.environ['SLACK_BOT_TOKEN']
-# VERIFICATION_TOKEN = os.environ['VERIFICATION_TOKEN']
-
-#instantiating slack client
 slack_client = WebClient(slack_token)
 
+
+def success():
+    resp = jsonify(success=True)
+    return resp
 
 def fetch_all():
     all_menus = []
@@ -61,9 +61,9 @@ def process_overview(menus, date):
     overview.sort(key=lambda x: x["name"])
     return overview
 
+
 def get_overview():
     return get_overview_from_cache()
-
 
 def get_overview_from_cache():
     return app.config['overview']
@@ -82,7 +82,6 @@ def save_overview_to_cache(overview):
     app.config['last_update'] = datetime.datetime.now()
 
 
-
 def generate_meal_of_the_day():
     overview = get_overview()
     place = random.choice(overview)
@@ -92,12 +91,11 @@ def generate_meal_of_the_day():
     dish_name = dish["name_en"] or dish["name"]
 
     app.config["meal_of_the_day"] = (place_name, dish_name)
-    
 
 
 @app.route('/motd', methods=['GET'])
 def meal_of_the_day():
-    if app.config["meal_of_the_day"]:
+    if app.config.get("meal_of_the_day", None):
         return (app.config["meal_of_the_day"][1], 200)
     else:
         return ("", 404)
@@ -120,11 +118,13 @@ def index():
 @app.route('/test_motd', methods=['GET', 'POST'])
 def test_motd():
     generate_meal_of_the_day()
+    return success()
 
 
 @app.route('/test_invite', methods=['GET', 'POST'])
 def test_invite():
     send_lunch_invite()
+    return success()
 
 
 def send_lunch_invite():
@@ -138,7 +138,7 @@ def send_lunch_invite():
             "type": "section",
             "text": {
               "type": "mrkdwn",
-              "text": f"Today on the menu:\n🧑‍🍳 *{dish_name}* at *{place_name}*\n\nWho's going for lunch? 😊"
+              "text": f"Today on the menu:\n🧑‍🍳 *{dish_name}* at *{place_name}*\n\nWho's going for lunch?"
             },
             "accessory": {
                 "type": "image",
@@ -182,9 +182,13 @@ def create_app(*args, **kwargs):
     app.config['overview'] = None
     app.config['last_update'] = None
 
-    scheduler.add_job(id='fetch', func=reload_overview, trigger="cron", hour=7, replace_existing=True)
-    scheduler.add_job(id='motd', func=generate_meal_of_the_day, trigger="cron", hour=8, replace_existing=True)
-    scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=12, replace_existing=True)
+    # scheduler.add_job(id='fetch', func=reload_overview, trigger="cron", hour=7, day_of_week="mon,tue,wed,thu,fri")
+    # scheduler.add_job(id='motd', func=generate_meal_of_the_day, trigger="cron", hour=8, day_of_week="mon,tue,wed,thu,fri")
+    # scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=12, day_of_week="mon,tue,wed,thu,fri")
+
+    scheduler.add_job(id='fetch', func=reload_overview, trigger="cron", minute=25)
+    scheduler.add_job(id='motd', func=generate_meal_of_the_day, trigger="cron", minute=26)
+    scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", minute=27)
     scheduler.start()
     
     random.seed(42)
