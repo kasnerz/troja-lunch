@@ -29,90 +29,105 @@ def success():
     resp = jsonify(success=True)
     return resp
 
-def fetch_all():
-    all_menus = []
+def fetch_all_places():
+    places = []
 
     for place_cls in app.config['places']:
         place = place_cls()
         try:
             logger.info(f"Fetching data for {place.name}")
-            menu = place.get_menu()
-            all_menus.append(menu)
+            place.fetch_menus()
         except Exception as e:
             logger.error(f"Error when fetching data for {place.name}")
             logger.exception(e)
+        places.append(place)
     
-    return all_menus
+    return places
 
 
-def process_overview(menus, date):
+def get_overview_for_day(date):
+    places = app.config["places"]
     overview = []    
 
-    for place in menus:
-        for menu in place:  
+    for place in places:
+        o = {
+            "name" : place.name,
+            "tab_id" : place.tab_id,
+            "soups" : [],
+            "dishes" : []
+        }
+        for menu in place.get_menus():
             if menu.date == date:
-                menu.translate()   
-                overview.append({
-                    "name" : menu.place,
-                    "soups" : [s.__dict__ for s in menu.soups],
-                    "dishes" : [d.__dict__ for d in menu.dishes]
-                })
+                menu.translate()
+                o["soups"] = [s.__dict__ for s in menu.soups]
+                o["dishes"] = [d.__dict__ for d in menu.dishes]
+                overview.append(o)
+                break
 
     overview.sort(key=lambda x: x["name"])
     return overview
 
 
-def get_overview():
-    return get_overview_from_cache()
-
-def get_overview_from_cache():
-    return app.config['overview']
-
 @app.before_first_request
-def reload_overview():
-    now = datetime.datetime.now() 
+def reload_places():
+    if get_cache_age() < timedelta(hours=12):
+        return
 
-    menus = fetch_all()
-    overview = process_overview(menus, now.date())
-    save_overview_to_cache(overview)
-
-
-def save_overview_to_cache(overview):
-    app.config['overview'] = overview
+    places = fetch_all_places()
+    app.config["places"] = places
     app.config['last_update'] = datetime.datetime.now()
 
 
+def get_cache_age():
+    now = datetime.datetime.now()
+    if not app.config['last_update']:
+        return now - datetime.datetime.min
+
+    return now - app.config['last_update']
+
+
 def generate_meal_of_the_day():
-    overview = get_overview()
+    now = datetime.datetime.now()
+
+    overview = get_overview_for_day(now.date())
     place = random.choice(overview)
     place_name = place["name"]
 
     dish = random.choice(place["dishes"])
     dish_name = dish["name_en"] or dish["name"]
 
-    app.config["meal_of_the_day"] = (place_name, dish_name)
+    app.config["meal_of_the_day"] = {
+        "place" : place_name,
+        "dish" : dish_name
+    }
 
 
 @app.route('/motd', methods=['GET'])
 def meal_of_the_day():
-    if app.config.get("meal_of_the_day", None):
-        return (app.config["meal_of_the_day"][1], 200)
-    else:
-        return ("", 404)
+    if not get_meal_of_the_day():
+        generate_meal_of_the_day()
+
+    return get_meal_of_the_day()["dish"], 200
+
+
+def get_meal_of_the_day():
+    return app.config.get("meal_of_the_day")
     
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     logger.info(f"Page loaded")
     
-    now = datetime.datetime.now() 
-    overview = get_overview()
-    last_update = app.config['last_update'].strftime("%A %d %b %Y %H:%M:%S")
+    now = datetime.datetime.now()
+    overview = get_overview_for_day(now.date())
+    generate_meal_of_the_day()
+    last_update = app.config['last_update'].strftime("%d %b %Y %H:%M:%S")
     
     return render_template('index.html', 
-        date=now.strftime("%A %d %B %Y"), 
+        date=now, 
         overview=overview,
-        last_update=last_update
+        last_update=last_update,
+        motd=get_meal_of_the_day()
     )
 
 @app.route('/test_motd', methods=['GET', 'POST'])
@@ -182,17 +197,13 @@ def create_app(*args, **kwargs):
     app.config['overview'] = None
     app.config['last_update'] = None
 
-    # scheduler.add_job(id='fetch', func=reload_overview, trigger="cron", hour=7, day_of_week="mon,tue,wed,thu,fri")
-    # scheduler.add_job(id='motd', func=generate_meal_of_the_day, trigger="cron", hour=8, day_of_week="mon,tue,wed,thu,fri")
-    # scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=12, day_of_week="mon,tue,wed,thu,fri")
-
-    scheduler.add_job(id='fetch', func=reload_overview, trigger="cron", minute=25)
-    scheduler.add_job(id='motd', func=generate_meal_of_the_day, trigger="cron", minute=26)
-    scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", minute=27)
+    scheduler.add_job(id='fetch', func=reload_places, trigger="cron", hour=7, day_of_week="mon,tue,wed,thu,fri")
+    scheduler.add_job(id='motd', func=generate_meal_of_the_day, trigger="cron", hour=8, day_of_week="mon,tue,wed,thu,fri")
+    scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=12, day_of_week="mon,tue,wed,thu,fri")
     scheduler.start()
     
     random.seed(42)
-    # reload_overview()
+    # reload_places()
 
     return app
 

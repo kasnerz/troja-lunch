@@ -1,16 +1,32 @@
-* {
-    box-sizing: border-box;
-}
 body {
     max-width: 800px;
     margin: 40px auto;
     padding: 0 20px;
-    font: 18px/1.4 'Open Sans', sans-serif;
+    /* font: 18px/1.4 'Open Sans', sans-serif;
     color: #495057;
-    background-color: #FFFFFF;
+    background-color: #FFFFFF; */
     /*background-color: #F5F3D4;*/
 }
 
+a {
+    color: #F47B20
+}
+
+.nav-link {
+    color: #F47B20;
+    text-decoration-color: #F47B20;
+}
+.nav-link:focus, .nav-link:hover {
+    color: #F47B20;
+}
 #footnote {
     font-size: 15px
+}
+
+.infobox  {
+    margin-top: 20px;
+}
+
+.motdbox  {
+    margin-top: 20px;
 }

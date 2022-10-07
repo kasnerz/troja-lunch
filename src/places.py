@@ -57,20 +57,29 @@ class Dish:
 
 
 class Place:
-    pass
+    def __init__(self):
+        self.menus = []
+
+    def get_menus(self):
+        return self.menus
+
+    def fetch_menus(self):
+        raise NotImplementedError
 
     
 class MenzaTroja(Place):
     def __init__(self):
+        super().__init__()
         self.name = "Menza Troja"
         self.url = "https://kamweb.ruk.cuni.cz/webkredit/Api/Ordering/Rss?canteenId=27&locale=cs"
+        self.tab_id = "menza"
 
-    def get_menu(self):
+    def fetch_menus(self):
         rss = requests.get(self.url).content.decode("utf-8")
         rss = html.unescape(rss)
         content = bs(rss, features="xml")
         
-        menu = []
+        menus = []
 
         for day in content.find_all("item"):
             menu_date = day.find("title").text
@@ -89,16 +98,19 @@ class MenzaTroja(Place):
 
             dishes = [Dish(el.text.strip()) for el in dish_menu.find_all("li")]
             m = Menu(dishes, soups=[soup], date=menu_date, place=self.name)
-            menu.append(m)
+            menus.append(m)
 
-        return menu
+        self.menus = menus
+        return True
 
                 
 
 class BufetTroja(Place):
     def __init__(self):
+        super().__init__()
         self.name = "Bufet Troja"
         self.url = "https://aurora.troja.mff.cuni.cz/pavlu/bufet.pdf"
+        self.tab_id = "bufet"
     
     def _is_food(self, s):
         return re.search(r"^\s*(\d){2,4}g ", s)     # contains weight
@@ -109,7 +121,7 @@ class BufetTroja(Place):
     def _is_soup(self, s):
         return "polévka" in s.lower()
 
-    def get_menu(self):
+    def fetch_menus(self):
         pdf = requests.get(self.url)
 
         with open('bufet_tmp.pdf', 'wb') as f:
@@ -117,13 +129,13 @@ class BufetTroja(Place):
 
         text = textract.process('bufet_tmp.pdf')
         text = text.decode("utf-8").split("\n")
-        menu = []
+        menus = []
         m = None
         
         for i in text:
             if self._is_date(i):
                 if m is not None:
-                    menu.append(m)
+                    menus.append(m)
 
                 menu_date = re.sub(r"[^\d\.]", "", i)
                 current_date = dateparser.parse(menu_date).date()
@@ -137,24 +149,27 @@ class BufetTroja(Place):
                 dish = Dish(i.split("g ")[1])
                 m.dishes.append(dish)
 
-        menu.append(m)
+        menus.append(m)
             
         os.remove("bufet_tmp.pdf")
-        return menu
+        self.menus = menus
+        return True
 
 
 
 
 class CastleRestaurant(Place):
     def __init__(self):
+        super().__init__()
         self.name = "Castle Restaurant"
         # the menu fetched by JS at https://www.castle-restaurant.cz/poledni-menu
         self.url = "https://www.prazskejrej.cz/menu-na-web/castle-residence"
+        self.tab_id = "castle"
     
-    def get_menu(self):
+    def fetch_menus(self):
         rss = requests.get(self.url).content.decode("utf-8")
         html = bs(rss, "lxml")
-        menu = []
+        menus = []
 
         for day in html.find_all("div", {"class" : "food-sub-section"})[:5]:
             menu_date = day.find("h3").text.strip()
@@ -169,9 +184,10 @@ class CastleRestaurant(Place):
             dishes = [Dish(x) for x in dishes[1:]]
             
             m = Menu(dishes, soups=[soup], date=menu_date, place=self.name)
-            menu.append(m)
+            menus.append(m)
         
-        return menu
+        self.menus = menus
+        return True
         
 
 if __name__ == "__main__":
@@ -180,4 +196,5 @@ if __name__ == "__main__":
     # place = MenzaTroja()
     # place = BufetTroja()
     place = CastleRestaurant()
-    print(place.get_menu())
+    place.fetch_menus()
+    print(place.get_menus())
