@@ -41,7 +41,7 @@
         <a class="nav-link" data-bs-toggle="tab" data-bs-target="#castle-pane" type="button" role="tab">🏰 Castle</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" data-bs-target="#motd-pane" type="button" role="tab">🧑‍🍳 Meal of the day</a>
+        <a class="nav-link" data-bs-toggle="tab" data-bs-target="#dotd-pane" type="button" role="tab">🧑‍🍳 Dish of the day</a>
       </li>
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="tab" data-bs-target="#about-pane" type="button" role="tab">💡 About</a>
@@ -59,7 +59,7 @@
               {% endfor %}
           </ul>
           <ul class="list-group list-group-flush">
-              <li class="list-group-item"><b>Meals</b></li>
+              <li class="list-group-item"><b>Dishs</b></li>
               {% for x in place.dishes %}
               <li class="list-group-item">{{ x.name }}<br><small><i>{{ x.name_en }}</i></small></li>
               {% endfor %}
@@ -67,10 +67,10 @@
       </div>
       {% endfor %}
 
-      <div id="motd-pane" class="tab-pane fade" role="tabpanel" tabindex="0">
-        <div class="motdbox justify-content-center">
+      <div id="dotd-pane" class="tab-pane fade" role="tabpanel" tabindex="0">
+        <div class="dotdbox justify-content-center">
 
-          <p><b>{{ motd.dish }}</b> at <b>{{ motd.place }}</b></p>
+          <p><b>{{ dotd.dish }}</b> at <b>{{ dotd.place }}</b></p>
           <img src="http://ufallab.ms.mff.cuni.cz/~kasner/cfm/{{ date.strftime('%Y-%m-%d') }}.png" class="img-fluid" style="max-width: 80%">
         </div>
       </div>
@@ -85,7 +85,7 @@
             <li><a href="https://www.prazskejrej.cz/menu-na-web/castle-residence">Castle Restaurant</a></li>
           </ul>
         </p>
-        <p>Images are generated using <a href="https://github.com/CompVis/stable-diffusion">Stable Diffusion</a>. Texts are translated using <a href="https://lindat.mff.cuni.cz/services/translation/docs">CUBBITT API</a>.</p>
+        <p>The "dish of the day" image is generated using <a href="https://github.com/CompVis/stable-diffusion">Stable Diffusion</a>. The dish names are translated using <a href="https://lindat.mff.cuni.cz/services/translation/docs">CUBBITT API</a>.</p>
         <p>Source code: <a href="https://github.com/kasnerz/cfm-bot">https://github.com/kasnerz/cfm-bot</a></p>
         <p>
           © 2022 <a href="https://ufal.mff.cuni.cz/zdenek-kasner/">Zdeněk Kasner</a>, ÚFAL MFF CUNI.
