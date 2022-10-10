@@ -162,7 +162,7 @@ def send_lunch_invite():
             "type": "section",
             "text": {
               "type": "mrkdwn",
-              "text": f"Today on the menu:\n🧑‍🍳 *{dish_name}* at *{place_name}*\n\nWho's going for lunch?"
+              "text": f"Dish of the day:\n🧑‍🍳 *{dish_name}* at *{place_name}*\nSee the full menu at https://troja-lunch.herokuapp.com/\n\nWho's going for lunch?"
             },
             "accessory": {
                 "type": "image",

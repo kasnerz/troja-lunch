@@ -145,7 +145,7 @@ class BufetTroja(Place):
                 m = Menu(dishes=[], soups=[], date=current_date, place=self.name)
 
             if self._has_soup(i) and m is not None:
-                soup = re.search(r"polévka ([\w\s,]*\w)", i, flags=re.IGNORECASE).group(1)
+                soup = re.search(r"(polévka [\w\s,]*\w)", i, flags=re.IGNORECASE).group(1)
 
                 if soup:
                     soup = Dish(soup.strip().capitalize(), type="soup")
