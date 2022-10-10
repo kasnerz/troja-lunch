@@ -118,6 +118,9 @@ def dish_of_the_day():
 
 
 def get_dish_of_the_day():
+    if not get_dish_of_the_day():
+        generate_dish_of_the_day()
+
     return app.config.get("dish_of_the_day")
     
 
@@ -209,7 +212,6 @@ def create_app(*args, **kwargs):
     scheduler.add_job(id='fetch', func=reload_places, trigger="cron", hour=7, day_of_week="mon,tue,wed,thu,fri")
     scheduler.add_job(id='dotd', func=generate_dish_of_the_day, trigger="cron", hour=8, day_of_week="mon,tue,wed,thu,fri")
     scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=12, day_of_week="mon,tue,wed,thu,fri")
-    scheduler.add_job(id='invitetest', func=send_lunch_invite, trigger="cron", minute=55, day_of_week="mon,tue,wed,thu,fri")
     scheduler.start()
     
     random.seed(42)
