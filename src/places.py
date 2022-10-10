@@ -112,14 +112,17 @@ class BufetTroja(Place):
         self.url = "https://aurora.troja.mff.cuni.cz/pavlu/bufet.pdf"
         self.tab_id = "bufet"
     
-    def _is_food(self, s):
+    def _has_food(self, s):
         return re.search(r"^\s*(\d){2,4}g ", s)     # contains weight
 
-    def _is_date(self, s):
+    def _has_date(self, s):
         return re.search(r"\d{1,2}\.\s*\d{1,2}\.\s*\d{4}", s)
 
-    def _is_soup(self, s):
+    def _has_soup(self, s):
         return "polévka" in s.lower()
+
+    def _is_last(self, s):
+        return "Dále nabízíme" in s
 
     def fetch_menus(self):
         pdf = requests.get(self.url)
@@ -127,27 +130,34 @@ class BufetTroja(Place):
         with open('bufet_tmp.pdf', 'wb') as f:
             f.write(pdf.content)
 
-        text = textract.process('bufet_tmp.pdf')
+        text = textract.process('bufet_tmp.pdf', method='pdftotext', layout=True)
         text = text.decode("utf-8").split("\n")
         menus = []
         m = None
         
         for i in text:
-            if self._is_date(i):
+            if self._has_date(i):
                 if m is not None:
                     menus.append(m)
 
-                menu_date = re.sub(r"[^\d\.]", "", i)
+                menu_date = re.search(r"\d{1,2}\.\s*\d{1,2}\.\s*\d{4}", i).group(0)
                 current_date = dateparser.parse(menu_date).date()
                 m = Menu(dishes=[], soups=[], date=current_date, place=self.name)
 
-            elif self._is_soup(i) and m is not None:
-                soup = Dish(i.strip(), type="soup")
-                m.soups.append(soup)
+            if self._has_soup(i) and m is not None:
+                soup = re.search(r"polévka ([\w\s,]*\w)", i, flags=re.IGNORECASE).group(1)
 
-            elif self._is_food(i) and m is not None:
-                dish = Dish(i.split("g ")[1])
+                if soup:
+                    soup = Dish(soup.strip().capitalize(), type="soup")
+                    m.soups.append(soup)
+
+            if self._has_food(i) and m is not None:
+                dish = re.search(r"\d+g ([\w\s,]*\w)", i, flags=re.IGNORECASE).group(1)
+                dish = Dish(dish.strip().capitalize())
                 m.dishes.append(dish)
+
+            if self._is_last(i):
+                break
 
         menus.append(m)
             

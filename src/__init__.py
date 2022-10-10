@@ -61,7 +61,8 @@ def get_overview_for_day(date):
                 overview.append(o)
                 break
 
-    overview.sort(key=lambda x: x["name"])
+    # overview.sort(key=lambda x: x["name"])
+
     return overview
 
 

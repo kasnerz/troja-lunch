@@ -50,8 +50,7 @@
 
     <div class="tab-content" id="myTabContent">
       {% for place in overview %}
-      <div id="{{ place.tab_id }}-pane" class="tab-pane fade show active" role="tabpanel" tabindex="0">
-          <!-- <h2>{{ place.name }}</h2> -->
+      <div id="{{ place.tab_id }}-pane" class="tab-pane fade {% if loop.index == 1 %} show active {% endif %}" role="tabpanel" tabindex="0">
           <ul class="list-group list-group-flush">
             <li class="list-group-item"><b>Soup(s)</b></li>
               {% for x in place.soups %}
@@ -59,7 +58,7 @@
               {% endfor %}
           </ul>
           <ul class="list-group list-group-flush">
-              <li class="list-group-item"><b>Dishs</b></li>
+              <li class="list-group-item"><b>Dishes</b></li>
               {% for x in place.dishes %}
               <li class="list-group-item">{{ x.name }}<br><small><i>{{ x.name_en }}</i></small></li>
               {% endfor %}
