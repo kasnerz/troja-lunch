@@ -150,7 +150,9 @@ def test_invite():
 
 
 def send_lunch_invite():
-    place_name, dish_name = app.config["dish_of_the_day"]
+    dotd = get_dish_of_the_day()
+    place_name = dotd["place"]
+    dish_name = dotd["dish"]
     
     now = datetime.datetime.now()
     now_str = now.strftime("%Y-%m-%d")
