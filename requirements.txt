@@ -7,3 +7,4 @@ slack_sdk==3.19.0
 textract==1.6.5
 flask_apscheduler==1.12.4
 gunicorn==20.1.0
+pdftotext
