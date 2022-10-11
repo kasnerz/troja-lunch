@@ -5,6 +5,7 @@ import logging
 import datetime
 import random
 from datetime import timedelta
+
 from flask import Flask, render_template, jsonify
 from slack_sdk import WebClient
 from flask_apscheduler import APScheduler
@@ -44,7 +45,7 @@ def fetch_all_places():
 
 def get_overview_for_day(date):
     places = app.config["places"]
-    overview = []    
+    overview = []
 
     for place in places:
         o = {
@@ -58,17 +59,16 @@ def get_overview_for_day(date):
                 menu.translate()
                 o["soups"] = [s.__dict__ for s in menu.soups]
                 o["dishes"] = [d.__dict__ for d in menu.dishes]
-                overview.append(o)
                 break
-
-    # overview.sort(key=lambda x: x["name"])
+        overview.append(o)
 
     return overview
 
 
 @app.before_first_request
 def reload_places():
-    if get_cache_age() < timedelta(hours=12):
+    # to ensure that the cache is reloaded once per day (not setting "24" to avoid second-like delays)
+    if get_cache_age() < timedelta(hours=23):
         return
 
     places = fetch_all_places()
@@ -103,34 +103,40 @@ def generate_dish_of_the_day():
     dish = random.choice(place["dishes"])
     dish_name = dish["name_en"] or dish["name"]
 
-    app.config["dish_of_the_day"] = {
+    dotd = {
         "place" : place_name,
         "dish" : dish_name
     }
+    app.config["dish_of_the_day"] = dotd
+    logger.info(f"Generated dish of the day: {dish_name} at {place_name}")
 
-
-@app.route('/dotd', methods=['GET'])
-def dish_of_the_day():
-    if not get_dish_of_the_day():
-        generate_dish_of_the_day()
-
-    return get_dish_of_the_day()["dish"], 200
+    return dotd
 
 
 def get_dish_of_the_day():
-    if not get_dish_of_the_day():
-        generate_dish_of_the_day()
+    dotd = app.config.get("dish_of_the_day")
 
-    return app.config.get("dish_of_the_day")
-    
+    if not dotd:
+        logger.warning("Dish of the day was not generated, generating now...")
+        dotd = generate_dish_of_the_day()
+
+    return dotd
+
+
+@app.route('/dotd', methods=['GET'])
+def dotd():
+    dotd = get_dish_of_the_day()
+    return dotd["dish"], 200
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     logger.info(f"Page loaded")
-    
     now = datetime.datetime.now()
+
+    # the overview will be cached at this point either due to the @app.before_first_request decorator
+    # or due to the regular scheduler
     overview = get_overview_for_day(now.date())
-    generate_dish_of_the_day()
     last_update = app.config['last_update'].strftime("%d %b %Y %H:%M:%S")
     
     return render_template('index.html', 
@@ -140,16 +146,23 @@ def index():
         dotd=get_dish_of_the_day()
     )
 
-@app.route('/test_dotd', methods=['GET', 'POST'])
-def test_dotd():
-    generate_dish_of_the_day()
-    return success()
-
 
 @app.route('/test_invite', methods=['GET', 'POST'])
 def test_invite():
     send_lunch_invite()
     return success()
+
+@app.route('/test_overview', methods=['GET', 'POST'])
+def test_overview():
+    now = datetime.datetime.now()
+    overview = get_overview_for_day(now.date())
+
+    return overview, 200
+
+@app.route('/test_places', methods=['GET', 'POST'])
+def test_places():
+    places = app.config["places"]
+    return str([p.__dict__ for p in places]), 200
 
 
 def send_lunch_invite():
@@ -165,7 +178,7 @@ def send_lunch_invite():
             "type": "section",
             "text": {
               "type": "mrkdwn",
-              "text": f"Dish of the day:\n🧑‍🍳 *{dish_name}* at *{place_name}*\nSee the full menu at https://troja-lunch.herokuapp.com/\n\nWho's going for lunch?"
+              "text": f"Dish of the day:\n🧑‍🍳 *{dish_name}* at *{place_name}*\nFull menu: https://troja-lunch.herokuapp.com/\n\nWho's going for lunch?"
             },
             "accessory": {
                 "type": "image",
@@ -209,9 +222,10 @@ def create_app(*args, **kwargs):
     app.config['overview'] = None
     app.config['last_update'] = None
 
-    scheduler.add_job(id='fetch', func=reload_places, trigger="cron", hour=7, day_of_week="mon,tue,wed,thu,fri")
-    scheduler.add_job(id='dotd', func=generate_dish_of_the_day, trigger="cron", hour=8, day_of_week="mon,tue,wed,thu,fri")
-    scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=12, day_of_week="mon,tue,wed,thu,fri")
+    # heroku operates in GMT, hours are shifted to account for that
+    scheduler.add_job(id='fetch', func=reload_places, trigger="cron", hour=5, day_of_week="mon,tue,wed,thu,fri")
+    scheduler.add_job(id='dotd', func=generate_dish_of_the_day, trigger="cron", hour=6, day_of_week="mon,tue,wed,thu,fri")
+    scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=9, day_of_week="mon,tue,wed,thu,fri")
     scheduler.start()
     
     random.seed(42)

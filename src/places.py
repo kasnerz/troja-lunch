@@ -141,7 +141,7 @@ class BufetTroja(Place):
                     menus.append(m)
 
                 menu_date = re.search(r"\d{1,2}\.\s*\d{1,2}\.\s*\d{4}", i).group(0)
-                current_date = dateparser.parse(menu_date).date()
+                current_date = datetime.datetime.strptime(menu_date, "%d.%m.%Y").date()
                 m = Menu(dishes=[], soups=[], date=current_date, place=self.name)
 
             if self._has_soup(i) and m is not None:
