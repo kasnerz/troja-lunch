@@ -222,7 +222,7 @@ def send_lunch_invite():
             "type": "section",
             "text": {
               "type": "mrkdwn",
-              "text": f"Dish of the day:\n🧑‍🍳 *{dish_name}* at *{place_name}*\nFull menu: https://troja-lunch.herokuapp.com/\n\nWho's going for lunch?"
+              "text": f"Dish of the day:\n🧑‍🍳 *{dish_name}* at *{place_name}*\nFull menu: https://tiny.cc/troja-lunch\n\nWho's going for lunch?"
             },
             "accessory": {
                 "type": "image",
