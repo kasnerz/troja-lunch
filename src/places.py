@@ -9,7 +9,7 @@ import os
 import dateparser
 from bs4 import BeautifulSoup as bs
 from collections import defaultdict
-from .translate import translate
+from src.translate import translate
 
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%H:%M:%S')

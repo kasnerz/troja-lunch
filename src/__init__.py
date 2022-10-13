@@ -1,19 +1,33 @@
 import os
 import requests
+import shelve
 import json
 import logging
 import datetime
 import random
+import pickle
 from datetime import timedelta
 
 from flask import Flask, render_template, jsonify
 from slack_sdk import WebClient
 from flask_apscheduler import APScheduler
 
-from .places import MenzaTroja, BufetTroja, CastleRestaurant
+
+# from apscheduler.schedulers.blocking import BlockingScheduler
+from src.places import MenzaTroja, BufetTroja, CastleRestaurant
 
 scheduler = APScheduler()
+
+# sched = BlockingScheduler()
 app = Flask(__name__)
+
+app.config['places'] = [
+        MenzaTroja,
+        BufetTroja,
+        CastleRestaurant
+    ]
+app.config['db'] = "data.db"
+
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
@@ -38,13 +52,19 @@ def fetch_all_places():
         except Exception as e:
             logger.error(f"Error when fetching data for {place.name}")
             logger.exception(e)
+
+        for menu in place.get_menus():
+            # translating is time-consuming, for now translate only food for the current day
+            if menu.date == datetime.datetime.now().date():
+                menu.translate()
+
         places.append(place)
     
     return places
 
 
 def get_overview_for_day(date):
-    places = app.config["places"]
+    places = get_var("places")
     overview = []
 
     for place in places:
@@ -56,7 +76,6 @@ def get_overview_for_day(date):
         }
         for menu in place.get_menus():
             if menu.date == date:
-                menu.translate()
                 o["soups"] = [s.__dict__ for s in menu.soups]
                 o["dishes"] = [d.__dict__ for d in menu.dishes]
                 break
@@ -64,26 +83,51 @@ def get_overview_for_day(date):
 
     return overview
 
+# heroku has a troublesome tendency of shutting down the app after 30 minutes
+# we thus have to make all the settings persistent
+def save_var(key, val):
+    with shelve.open(app.config["db"]) as db:
+        db[key] = val
+    
+def get_var(key):
+    with shelve.open(app.config['db']) as db:
+        if not key in db:
+            return None
+
+        return db[key]
+
+@app.route('/delete_config', methods=['GET'])
+def delete_config():
+    if os.path.exists(app.config['db']):
+        os.remove(app.config['db'])
+
+
 
 @app.before_first_request
+# @sched.scheduled_job('fetch', hour=5, day_of_week="mon-fri")
 def reload_places():
     # to ensure that the cache is reloaded once per day (not setting "24" to avoid second-like delays)
-    if get_cache_age() < timedelta(hours=23):
+    cache_age = get_cache_age()
+    if cache_age < timedelta(hours=23):
+        logger.info(f"Last update {cache_age} ago, not reloading")
         return
 
+    logger.info(f"Reloading places")
     places = fetch_all_places()
-    app.config["places"] = places
-    app.config['last_update'] = datetime.datetime.now()
+    save_var("places", places)
+    save_var("last_update", datetime.datetime.now())
 
 
 def get_cache_age():
     now = datetime.datetime.now()
-    if not app.config['last_update']:
+    last_update = get_var('last_update')
+    if not last_update:
         return now - datetime.datetime.min
 
-    return now - app.config['last_update']
+    return now - last_update
 
 
+# @sched.scheduled_job('dotd', hour=6, day_of_week="mon-fri")
 def generate_dish_of_the_day():
     now = datetime.datetime.now()
 
@@ -91,10 +135,10 @@ def generate_dish_of_the_day():
     places_with_dishes = [p for p in overview if p["dishes"]]
 
     if not places_with_dishes:
-        app.config["dish_of_the_day"] = {
+        save_var("dish_of_the_day", {
             "place" : "The Restaurant at the End of the Universe",
             "dish" : "Ameglian Major Cow"
-        }
+        })
         return
 
     place = random.choice(places_with_dishes)
@@ -107,14 +151,14 @@ def generate_dish_of_the_day():
         "place" : place_name,
         "dish" : dish_name
     }
-    app.config["dish_of_the_day"] = dotd
+    save_var("dish_of_the_day", dotd)
     logger.info(f"Generated dish of the day: {dish_name} at {place_name}")
 
     return dotd
 
 
 def get_dish_of_the_day():
-    dotd = app.config.get("dish_of_the_day")
+    dotd = get_var("dish_of_the_day")
 
     if not dotd:
         logger.warning("Dish of the day was not generated, generating now...")
@@ -137,7 +181,7 @@ def index():
     # the overview will be cached at this point either due to the @app.before_first_request decorator
     # or due to the regular scheduler
     overview = get_overview_for_day(now.date())
-    last_update = app.config['last_update'].strftime("%d %b %Y %H:%M:%S")
+    last_update = get_var('last_update').strftime("%d %b %Y %H:%M:%S")
     
     return render_template('index.html', 
         date=now, 
@@ -164,7 +208,7 @@ def test_places():
     places = app.config["places"]
     return str([p.__dict__ for p in places]), 200
 
-
+# @sched.scheduled_job('invite', hour=9, day_of_week="mon-fri")
 def send_lunch_invite():
     dotd = get_dish_of_the_day()
     place_name = dotd["place"]
@@ -214,18 +258,14 @@ def post_message(m):
 
 
 def create_app(*args, **kwargs):
-    app.config['places'] = [
-        MenzaTroja,
-        BufetTroja,
-        CastleRestaurant
-    ]
-    app.config['overview'] = None
-    app.config['last_update'] = None
 
-    # heroku operates in GMT, hours are shifted to account for that
-    scheduler.add_job(id='fetch', func=reload_places, trigger="cron", hour=5, day_of_week="mon,tue,wed,thu,fri")
-    scheduler.add_job(id='dotd', func=generate_dish_of_the_day, trigger="cron", hour=6, day_of_week="mon,tue,wed,thu,fri")
-    scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=9, day_of_week="mon,tue,wed,thu,fri")
+    # sched.start()
+    # app.config['overview'] = None
+    # app.config['last_update'] = None
+
+    scheduler.add_job(id='fetch', func=reload_places, trigger="cron", hour=7, day_of_week="mon,tue,wed,thu,fri")
+    scheduler.add_job(id='dotd', func=generate_dish_of_the_day, trigger="cron", hour=8, day_of_week="mon,tue,wed,thu,fri")
+    scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=11, day_of_week="mon,tue,wed,thu,fri")
     scheduler.start()
     
     random.seed(42)
