@@ -152,7 +152,7 @@ class BufetTroja(Place):
                     m.soups.append(soup)
 
             if self._has_food(i) and m is not None:
-                dish = re.search(r"\d+g ([\w\s,]*\w)", i, flags=re.IGNORECASE).group(1)
+                dish = re.search(r"\d+g\s*([^\d]*[^\W\d])", i, flags=re.IGNORECASE).group(1)
                 dish = Dish(dish.strip().capitalize())
                 m.dishes.append(dish)
 
@@ -160,7 +160,6 @@ class BufetTroja(Place):
                 break
 
         menus.append(m)
-            
         os.remove("bufet_tmp.pdf")
         self.menus = menus
         return True

@@ -101,10 +101,13 @@ def delete_config():
     if os.path.exists(app.config['db']):
         os.remove(app.config['db'])
 
+    return success()
+
 
 
 @app.before_first_request
 # @sched.scheduled_job('fetch', hour=5, day_of_week="mon-fri")
+@app.route('/reload', methods=['GET'])
 def reload_places():
     # to ensure that the cache is reloaded once per day (not setting "24" to avoid second-like delays)
     cache_age = get_cache_age()
@@ -116,6 +119,8 @@ def reload_places():
     places = fetch_all_places()
     save_var("places", places)
     save_var("last_update", datetime.datetime.now())
+
+    return success()
 
 
 def get_cache_age():
@@ -178,8 +183,7 @@ def index():
     logger.info(f"Page loaded")
     now = datetime.datetime.now()
 
-    # the overview will be cached at this point either due to the @app.before_first_request decorator
-    # or due to the regular scheduler
+    reload_places()
     overview = get_overview_for_day(now.date())
     last_update = get_var('last_update').strftime("%d %b %Y %H:%M:%S")
     
