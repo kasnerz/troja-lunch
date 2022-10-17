@@ -62,9 +62,14 @@
               {% for x in place.dishes %}
               <li class="list-group-item">{{ x.name }}<br><small><i>{{ x.name_en }}</i></small></li>
               {% endfor %}
+              <li class="list-group-item"><p class="text-end small"><a href="{{ place.url }}">Source</a></p></li>
           </ul>
+          <!-- <ul class="list-group list-group-flush">
+            
+         </ul> -->
       </div>
       {% endfor %}
+
 
       <div id="dotd-pane" class="tab-pane fade" role="tabpanel" tabindex="0">
         <div class="dotdbox justify-content-center">
@@ -76,15 +81,8 @@
 
       <div id="about-pane" class="tab-pane fade" role="tabpanel" tabindex="0">
         <div class="infobox">
-        <p>
-          Data sources:
-          <ul>
-            <li><a href="https://kamweb.ruk.cuni.cz/webkredit/Api/Ordering/Rss?canteenId=27&locale=cs">Menza Troja</a></li>
-            <li><a href="https://aurora.troja.mff.cuni.cz/pavlu/bufet.pdf">Bufet Troja</a></li>
-            <li><a href="https://www.prazskejrej.cz/menu-na-web/castle-residence">Castle Restaurant</a></li>
-          </ul>
-        </p>
-        <p>The "dish of the day" image is generated using <a href="https://github.com/CompVis/stable-diffusion">Stable Diffusion</a>. The dish names are translated using <a href="https://lindat.mff.cuni.cz/services/translation/docs">CUBBITT API</a>.</p>
+        <p>The "dish of the day" image is generated using <a href="https://github.com/CompVis/stable-diffusion">Stable Diffusion</a>, dish names are translated using <a href="https://lindat.mff.cuni.cz/services/translation/docs">CUBBITT API</a>.</p>
+        <p>The app is in beta version and it is actively developed. If some data is outdated or missing, you can try to use this link for a <a href="/test_force_reload">force reload</a> (note that it may take a while).</p>
         <p>Source code: <a href="https://github.com/kasnerz/troja-lunch">https://github.com/kasnerz/troja-lunch</a></p>
         <p>
           © 2022 <a href="https://ufal.mff.cuni.cz/zdenek-kasner/">Zdeněk Kasner</a>, ÚFAL MFF CUNI.
@@ -96,7 +94,7 @@
 
     <hr>
     <div id="footnote">
-        <p><b>Last update: {{ last_update }}</b></p>
+        <p><b>Last update: {{ last_update }}.</b></p>
         <p><i>The URL is only temporary and may change anytime soon.</i></p>
     </div>
     

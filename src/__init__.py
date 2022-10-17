@@ -71,6 +71,7 @@ def get_overview_for_day(date):
         o = {
             "name" : place.name,
             "tab_id" : place.tab_id,
+            "url" : place.url,
             "soups" : [],
             "dishes" : []
         }
@@ -107,11 +108,11 @@ def delete_config():
 
 @app.before_first_request
 # @sched.scheduled_job('fetch', hour=5, day_of_week="mon-fri")
-@app.route('/reload', methods=['GET'])
-def reload_places():
+def reload_places(force=False):
     # to ensure that the cache is reloaded once per day (not setting "24" to avoid second-like delays)
     cache_age = get_cache_age()
-    if cache_age < timedelta(hours=23):
+    
+    if not force and cache_age < timedelta(hours=23):
         logger.info(f"Last update {cache_age} ago, not reloading")
         return
 
@@ -212,6 +213,12 @@ def test_places():
     places = app.config["places"]
     return str([p.__dict__ for p in places]), 200
 
+@app.route('/test_force_reload', methods=['GET', 'POST'])
+def test_force_reload():
+    reload_places(force=True)
+    return success()
+
+
 # @sched.scheduled_job('invite', hour=9, day_of_week="mon-fri")
 def send_lunch_invite():
     dotd = get_dish_of_the_day()
@@ -267,9 +274,10 @@ def create_app(*args, **kwargs):
     # app.config['overview'] = None
     # app.config['last_update'] = None
 
-    scheduler.add_job(id='fetch', func=reload_places, trigger="cron", hour=7, day_of_week="mon,tue,wed,thu,fri")
-    scheduler.add_job(id='dotd', func=generate_dish_of_the_day, trigger="cron", hour=8, day_of_week="mon,tue,wed,thu,fri")
-    scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=11, day_of_week="mon,tue,wed,thu,fri")
+    # shift two hours earlier to account for server time
+    scheduler.add_job(id='fetch', func=reload_places, trigger="cron", hour=5, day_of_week="mon,tue,wed,thu,fri")
+    scheduler.add_job(id='dotd', func=generate_dish_of_the_day, trigger="cron", hour=6, day_of_week="mon,tue,wed,thu,fri")
+    scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=9, day_of_week="mon,tue,wed,thu,fri")
     scheduler.start()
     
     random.seed(42)

@@ -166,7 +166,6 @@ class BufetTroja(Place):
 
 
 
-
 class CastleRestaurant(Place):
     def __init__(self):
         super().__init__()
@@ -183,17 +182,22 @@ class CastleRestaurant(Place):
         for day in html.find_all("div", {"class" : "food-sub-section"})[:5]:
             menu_date = day.find("h3").text.strip()
             menu_date = re.sub(r"[^\d\.]", "", menu_date)
-            menu_date = datetime.datetime.strptime(menu_date, "%d.%m.%Y").date()
-            
-            dishes = day.find_all("div", {"class" : "col align-self-center flex-grow-1 order-2 order-xs-4"})
-            dishes = [x.text.strip() for x in dishes]
-            dishes = [re.sub(r"\s*[-–—]{0,1}\s*(\d\w{0,1},{0,1}\s*){1,9}\s*$", "", x) for x in dishes] # remove alergens
-            
-            soup = Dish(dishes[0], type="soup")
-            dishes = [Dish(x) for x in dishes[1:]]
-            
-            m = Menu(dishes, soups=[soup], date=menu_date, place=self.name)
-            menus.append(m)
+
+            try:
+                menu_date = datetime.datetime.strptime(menu_date, "%d.%m.%Y").date()
+                
+                dishes = day.find_all("div", {"class" : "col align-self-center flex-grow-1 order-2 order-xs-4"})
+                dishes = [x.text.strip() for x in dishes]
+                dishes = [re.sub(r"\s*[-–—]{0,1}\s*(\d\w{0,1},{0,1}\s*){1,9}\s*$", "", x) for x in dishes] # remove alergens
+                
+                soup = Dish(dishes[0], type="soup")
+                dishes = [Dish(x) for x in dishes[1:]]
+                
+                m = Menu(dishes, soups=[soup], date=menu_date, place=self.name)
+                menus.append(m)
+            except Exception as e:
+                logger.exception(e)
+                continue
         
         self.menus = menus
         return True
