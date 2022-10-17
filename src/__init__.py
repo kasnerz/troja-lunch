@@ -6,6 +6,8 @@ import logging
 import datetime
 import random
 # import socket
+import pytz
+
 from datetime import timedelta
 
 from urllib.parse import urlparse
@@ -13,9 +15,10 @@ from flask import Flask, render_template, jsonify
 from slack_sdk import WebClient
 from flask_apscheduler import APScheduler
 
+from apscheduler.schedulers.background import BackgroundScheduler
+
 from src.places import MenzaTroja, BufetTroja, CastleRestaurant
 
-scheduler = APScheduler()
 
 app = Flask(__name__)
 
@@ -24,7 +27,12 @@ app.config['places'] = [
         BufetTroja,
         CastleRestaurant
     ]
+app.config['timezone'] = 'Europe/Prague'
+app.config['tz'] = pytz.timezone(app.config['timezone'])
 app.config['db'] = "data.db"
+
+# scheduler = APScheduler(timezone=app.config['timezone'])
+scheduler = BackgroundScheduler(timezone=app.config['timezone'])
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
@@ -52,7 +60,7 @@ def fetch_all_places():
 
         for menu in place.get_menus():
             # translating is time-consuming, for now translate only food for the current day
-            if menu.date == datetime.datetime.now().date():
+            if menu.date == datetime.datetime.now(app.config['tz']).date():
                 menu.translate()
 
         places.append(place)
@@ -109,30 +117,31 @@ def reload_places(force=False):
     # to ensure that the cache is reloaded once per day (not setting "24" to avoid second-like delays)
     cache_age = get_cache_age()
     
-    if not force and cache_age < timedelta(hours=23):
+    if not force and cache_age and cache_age < timedelta(hours=23):
         logger.info(f"Last update {cache_age} ago, not reloading")
         return
 
     logger.info(f"Reloading places")
     places = fetch_all_places()
     save_var("places", places)
-    save_var("last_update", datetime.datetime.now())
+    save_var("last_update", datetime.datetime.now(app.config['tz']))
 
     return success()
 
 
 def get_cache_age():
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(app.config['tz'])
     last_update = get_var('last_update')
+
     if not last_update:
-        return now - datetime.datetime.min
+        return None
 
     return now - last_update
 
 
 # @sched.scheduled_job('dotd', hour=6, day_of_week="mon-fri")
 def generate_dish_of_the_day():
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(app.config['tz'])
 
     overview = get_overview_for_day(now.date())
     places_with_dishes = [p for p in overview if p["dishes"]]
@@ -179,7 +188,7 @@ def dotd():
 @app.route('/', methods=['GET', 'POST'])
 def index():
     logger.info(f"Page loaded")
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(app.config['tz'])
 
     reload_places()
     overview = get_overview_for_day(now.date())
@@ -200,7 +209,7 @@ def test_invite():
 
 @app.route('/test_overview', methods=['GET', 'POST'])
 def test_overview():
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(app.config['tz'])
     overview = get_overview_for_day(now.date())
 
     return overview, 200
@@ -222,7 +231,7 @@ def send_lunch_invite():
     place_name = dotd["place"]
     dish_name = dotd["dish"]
     
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(app.config['tz'])
     now_str = now.strftime("%Y-%m-%d")
 
     message = [
@@ -271,10 +280,10 @@ def create_app(*args, **kwargs):
     # app.config['overview'] = None
     # app.config['last_update'] = None
 
-    # shift two hours earlier to account for server time
-    scheduler.add_job(id='fetch', func=reload_places, trigger="cron", hour=5, day_of_week="mon,tue,wed,thu,fri")
-    scheduler.add_job(id='dotd', func=generate_dish_of_the_day, trigger="cron", hour=6, day_of_week="mon,tue,wed,thu,fri")
-    scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=9, day_of_week="mon,tue,wed,thu,fri")
+
+    scheduler.add_job(id='fetch', func=reload_places, trigger="cron", hour=7, day_of_week="mon,tue,wed,thu,fri")
+    scheduler.add_job(id='dotd', func=generate_dish_of_the_day, trigger="cron", hour=8, day_of_week="mon,tue,wed,thu,fri")
+    scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=11, day_of_week="mon,tue,wed,thu,fri")
     scheduler.start()
 
     
