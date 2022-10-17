@@ -5,7 +5,7 @@ import json
 import logging
 import datetime
 import random
-import pickle
+import socket
 from datetime import timedelta
 
 from flask import Flask, render_template, jsonify
@@ -279,6 +279,9 @@ def create_app(*args, **kwargs):
     scheduler.add_job(id='dotd', func=generate_dish_of_the_day, trigger="cron", hour=6, day_of_week="mon,tue,wed,thu,fri")
     scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=9, day_of_week="mon,tue,wed,thu,fri")
     scheduler.start()
+
+    if socket.gethostname() == "rel2text":
+        app.config["APPLICATION_ROOT"] = "/rel2text"
     
     random.seed(42)
     # reload_places()
