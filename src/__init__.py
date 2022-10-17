@@ -5,20 +5,18 @@ import json
 import logging
 import datetime
 import random
-import socket
+# import socket
 from datetime import timedelta
 
+from urllib.parse import urlparse
 from flask import Flask, render_template, jsonify
 from slack_sdk import WebClient
 from flask_apscheduler import APScheduler
 
-
-# from apscheduler.schedulers.blocking import BlockingScheduler
 from src.places import MenzaTroja, BufetTroja, CastleRestaurant
 
 scheduler = APScheduler()
 
-# sched = BlockingScheduler()
 app = Flask(__name__)
 
 app.config['places'] = [
@@ -27,7 +25,6 @@ app.config['places'] = [
         CastleRestaurant
     ]
 app.config['db'] = "data.db"
-
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
@@ -280,8 +277,6 @@ def create_app(*args, **kwargs):
     scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=9, day_of_week="mon,tue,wed,thu,fri")
     scheduler.start()
 
-    if socket.gethostname() == "rel2text":
-        app.config["APPLICATION_ROOT"] = "/rel2text"
     
     random.seed(42)
     # reload_places()
