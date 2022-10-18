@@ -22,6 +22,7 @@ class Menu:
         self.soups = soups        # maybe not that beautiful
         self.date = date
         self.place = place
+        self.is_translated = False
     
     def translate(self):
         logger.info(f"Translating menu for {self.place}")
@@ -30,6 +31,11 @@ class Menu:
 
         for x in self.soups:
             x.translate()
+
+        self.is_translated = True
+
+    def is_translated(self):
+        return self.is_translated
     
     def __str__(self):
         return str(self.__dict__)

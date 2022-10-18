@@ -82,6 +82,10 @@ def get_overview_for_day(date):
         }
         for menu in place.get_menus():
             if menu.date == date:
+                if not menu.is_translated():
+                    logger.warning("Menu was not translated, translating now...")
+                    menu.translate()
+
                 o["soups"] = [s.__dict__ for s in menu.soups]
                 o["dishes"] = [d.__dict__ for d in menu.dishes]
                 break
