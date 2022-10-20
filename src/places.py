@@ -34,9 +34,6 @@ class Menu:
 
         self.is_translated = True
 
-    def is_translated(self):
-        return self.is_translated
-    
     def __str__(self):
         return str(self.__dict__)
 

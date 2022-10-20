@@ -82,7 +82,7 @@ def get_overview_for_day(date):
         }
         for menu in place.get_menus():
             if menu.date == date:
-                if not menu.is_translated():
+                if not menu.is_translated:
                     logger.warning("Menu was not translated, translating now...")
                     menu.translate()
 
