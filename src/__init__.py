@@ -5,12 +5,10 @@ import json
 import logging
 import datetime
 import random
-# import socket
 import pytz
 
 from datetime import timedelta
 
-from urllib.parse import urlparse
 from flask import Flask, render_template, jsonify
 from slack_sdk import WebClient
 from flask_apscheduler import APScheduler
@@ -59,7 +57,7 @@ def fetch_all_places():
             logger.exception(e)
 
         for menu in place.get_menus():
-            # translating is time-consuming, for now translate only food for the current day
+            # translating is time-consuming, for now translate only dishes for the current day
             if menu.date == datetime.datetime.now(app.config['tz']).date():
                 menu.translate()
 
@@ -93,11 +91,10 @@ def get_overview_for_day(date):
 
     return overview
 
-# heroku has a troublesome tendency of shutting down the app after 30 minutes
-# we thus have to make all the settings persistent
 def save_var(key, val):
     with shelve.open(app.config["db"]) as db:
         db[key] = val
+
     
 def get_var(key):
     with shelve.open(app.config['db']) as db:
@@ -247,7 +244,7 @@ def send_lunch_invite():
             },
             "accessory": {
                 "type": "image",
-                "image_url": f"http://ufallab.ms.mff.cuni.cz/~kasner/cfm/{now_str}.png",
+                "image_url": f"http://ufallab.ms.mff.cuni.cz/~kasner/troja-lunch/{now_str}.png",
                 "alt_text": "dish of the day"
             }
         },
