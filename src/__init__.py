@@ -118,7 +118,7 @@ def reload_places(force=False):
     # to ensure that the cache is reloaded once per day (not setting "24" to avoid second-like delays)
     cache_age = get_cache_age()
     
-    if not force and cache_age and cache_age < timedelta(hours=23):
+    if not force and cache_age and cache_age < timedelta(hours=12):
         logger.info(f"Last update {cache_age} ago, not reloading")
         return
 
