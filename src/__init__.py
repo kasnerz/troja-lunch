@@ -267,7 +267,7 @@ def post_message(m):
     try:
         response = slack_client.chat_postMessage(
             # channel="UV2PNNLE6",
-            channel="C03VCE49B52",
+            channel="C014KEBJA1M",
             blocks=m
         )
     except SlackApiError as e:
