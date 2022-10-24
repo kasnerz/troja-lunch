@@ -240,7 +240,7 @@ def send_lunch_invite():
             "type": "section",
             "text": {
               "type": "mrkdwn",
-              "text": f"Today on the menu:\n🧑‍🍳 *{dish_name}* at *{place_name}*\n\nFull menu: https://tiny.cc/troja-lunch\n\nWho's going for lunch? 🙂"
+              "text": f"Today on the menu:\n🧑‍🍳 *{dish_name}* at *{place_name}*\n\nFull menu: https://tiny.cc/troja-lunch\n\nWho is going for lunch?"
             },
             "accessory": {
                 "type": "image",
@@ -266,7 +266,8 @@ def send_lunch_invite():
 def post_message(m):
     try:
         response = slack_client.chat_postMessage(
-            channel="UV2PNNLE6",
+            # channel="UV2PNNLE6",
+            channel="C03VCE49B52",
             blocks=m
         )
     except SlackApiError as e:
