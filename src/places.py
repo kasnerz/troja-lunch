@@ -206,11 +206,11 @@ class CastleRestaurant(Place):
         return True
         
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     # today = datetime.datetime.now()
 
     # place = MenzaTroja()
     # place = BufetTroja()
-    place = CastleRestaurant()
-    place.fetch_menus()
-    print(place.get_menus())
+    # place = CastleRestaurant()
+    # place.fetch_menus()
+    # print(place.get_menus())

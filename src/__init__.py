@@ -111,11 +111,8 @@ def delete_config():
     return success()
 
 
-
 @app.before_first_request
-# @sched.scheduled_job('fetch', hour=5, day_of_week="mon-fri")
 def reload_places(force=False):
-    # to ensure that the cache is reloaded once per day (not setting "24" to avoid second-like delays)
     cache_age = get_cache_age()
     
     if not force and cache_age and cache_age < timedelta(hours=12):
@@ -140,7 +137,6 @@ def get_cache_age():
     return now - last_update
 
 
-# @sched.scheduled_job('dotd', hour=6, day_of_week="mon-fri")
 def generate_dish_of_the_day():
     now = datetime.datetime.now(app.config['tz'])
 
@@ -226,7 +222,6 @@ def test_force_reload():
     return success()
 
 
-# @sched.scheduled_job('invite', hour=9, day_of_week="mon-fri")
 def send_lunch_invite():
     dotd = get_dish_of_the_day()
     place_name = dotd["place"]
@@ -277,21 +272,12 @@ def post_message(m):
 
 
 def create_app(*args, **kwargs):
-
-    # sched.start()
-    # app.config['overview'] = None
-    # app.config['last_update'] = None
-
-
     scheduler.add_job(id='fetch', func=reload_places, trigger="cron", hour=7, day_of_week="mon,tue,wed,thu,fri")
     scheduler.add_job(id='dotd', func=generate_dish_of_the_day, trigger="cron", hour=8, day_of_week="mon,tue,wed,thu,fri")
     scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=11, day_of_week="mon,tue,wed,thu,fri")
     scheduler.start()
 
-    
     random.seed(42)
-    # reload_places()
-
     return app
 
 
