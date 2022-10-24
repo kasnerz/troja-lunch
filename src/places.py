@@ -91,11 +91,11 @@ class MenzaTroja(Place):
             menu_date_detail = day.find("div")
             lists = menu_date_detail.find_all("ul")
 
-            if len(lists) == 2:  # we have soup
+            if len(lists) == 2:  # we have a soup
                 soup = Dish(lists[0].find("li").text.strip(), type="soup")
                 dish_menu = lists[1]
             elif len(lists) == 1:
-                logger.warning("No soup found or something is broken")
+                logger.warning(f"No soup found in menza on {menu_date}")
                 soup = None
                 dish_menu = lists[0]
 
