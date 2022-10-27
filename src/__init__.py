@@ -227,7 +227,17 @@ def test_force_reload():
     return success()
 
 
+def is_holiday():
+    holidays = holidays.CZ()
+    today = datetime.datetime.now(app.config['tz']).date()
+
+    return today in holidays
+
+
 def send_lunch_invite(channel="default"):
+    if channel == "default" and is_holiday():
+        return
+
     dotd = get_dish_of_the_day()
     place_name = dotd["place"]
     dish_name = dotd["dish"]
