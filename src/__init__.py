@@ -25,6 +25,11 @@ app.config['places'] = [
         BufetTroja,
         CastleRestaurant
     ]
+app.config['channels'] = {
+    "user" : "UV2PNNLE6",
+    "default" : "C014KEBJA1M"
+}
+
 app.config['timezone'] = 'Europe/Prague'
 app.config['tz'] = pytz.timezone(app.config['timezone'])
 app.config['db'] = "data.db"
@@ -201,7 +206,7 @@ def index():
 
 @app.route('/test_invite', methods=['GET', 'POST'])
 def test_invite():
-    send_lunch_invite()
+    send_lunch_invite(channel="user")
     return success()
 
 @app.route('/test_overview', methods=['GET', 'POST'])
@@ -222,7 +227,7 @@ def test_force_reload():
     return success()
 
 
-def send_lunch_invite():
+def send_lunch_invite(channel="default"):
     dotd = get_dish_of_the_day()
     place_name = dotd["place"]
     dish_name = dotd["dish"]
@@ -235,24 +240,26 @@ def send_lunch_invite():
             "type": "section",
             "text": {
               "type": "mrkdwn",
-              "text": f"Today on the <https://tiny.cc/troja-lunch|menu>:\n🧑‍🍳 *{dish_name}* at *{place_name}*\n\nWhere to go? Vote with reactions:\n🍝 _Menza_  🌭 _Bufet_   🏰 _Castle_  🥕 _Elsewhere_"
+              "text": f"Today on the <https://tiny.cc/troja-lunch|menu>:\n🧑‍🍳 *{dish_name}* at *{place_name}*\n\nWhere to go? 🍝 _Menza_  🌭 _Bufet_   🏰 _Castle_  🥕 _Elsewhere_\n"
             },
             "accessory": {
                 "type": "image",
                 "image_url": f"http://ufallab.ms.mff.cuni.cz/~kasner/troja-lunch/{now_str}.png",
                 "alt_text": "dish of the day"
             }
-        }
+        },
+        {
+			"type": "divider"
+		}
     ]
-    post_message(message)
+    post_message(message, channel)
 
 
 
-def post_message(m):
+def post_message(m, channel="default"):
     try:
         response = slack_client.chat_postMessage(
-            # channel="UV2PNNLE6",
-            channel="C014KEBJA1M",
+            channel=app.config["channels"][channel],
             blocks=m
         )
     except SlackApiError as e:
