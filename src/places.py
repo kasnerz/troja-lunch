@@ -9,11 +9,21 @@ import os
 import dateparser
 from bs4 import BeautifulSoup as bs
 from collections import defaultdict
-from src.translate import translate
+from src.utils import translate
 
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
+
+class Place:
+    def __init__(self):
+        self.menus = []
+
+    def get_menus(self):
+        return self.menus
+
+    def fetch_menus(self):
+        raise NotImplementedError
 
 
 class Menu:
@@ -26,11 +36,18 @@ class Menu:
     
     def translate(self):
         logger.info(f"Translating menu for {self.place}")
+
         for x in self.dishes:
-            x.translate()
+            try:
+                x.translate()
+            except Exception as e:
+                logger.exception(e)
 
         for x in self.soups:
-            x.translate()
+            try:
+                x.translate()
+            except Exception as e:
+                logger.exception(e)
 
         self.is_translated = True
 
@@ -58,17 +75,6 @@ class Dish:
     def __repr__(self):
         return str(self.__dict__)
 
-
-class Place:
-    def __init__(self):
-        self.menus = []
-
-    def get_menus(self):
-        return self.menus
-
-    def fetch_menus(self):
-        raise NotImplementedError
-
     
 class MenzaTroja(Place):
     def __init__(self):
@@ -92,15 +98,15 @@ class MenzaTroja(Place):
             lists = menu_date_detail.find_all("ul")
 
             if len(lists) == 2:  # we have a soup
-                soup = Dish(lists[0].find("li").text.strip(), type="soup")
+                soups = [Dish(lists[0].find("li").text.strip(), type="soup")]
                 dish_menu = lists[1]
             elif len(lists) == 1:
                 logger.warning(f"No soup found in menza on {menu_date}")
-                soup = None
+                soups = []
                 dish_menu = lists[0]
 
             dishes = [Dish(el.text.strip()) for el in dish_menu.find_all("li")]
-            m = Menu(dishes, soups=[soup], date=menu_date, place=self.name)
+            m = Menu(dishes, soups=soups, date=menu_date, place=self.name)
             menus.append(m)
 
         self.menus = menus
@@ -193,10 +199,10 @@ class CastleRestaurant(Place):
                 dishes = [x.text.strip() for x in dishes]
                 dishes = [re.sub(r"\s*[-–—]{0,1}\s*(\d\w{0,1},{0,1}\s*){1,9}\s*$", "", x) for x in dishes] # remove alergens
                 
-                soup = Dish(dishes[0], type="soup")
+                soups = [Dish(dishes[0], type="soup")]
                 dishes = [Dish(x) for x in dishes[1:]]
                 
-                m = Menu(dishes, soups=[soup], date=menu_date, place=self.name)
+                m = Menu(dishes, soups=soups, date=menu_date, place=self.name)
                 menus.append(m)
             except Exception as e:
                 logger.exception(e)

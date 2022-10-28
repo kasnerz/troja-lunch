@@ -5,9 +5,9 @@ import json
 import logging
 import datetime
 import random
-import pytz
 
 from datetime import timedelta
+from src.utils import now, today, timezone, is_holiday
 
 from flask import Flask, render_template, jsonify
 from slack_sdk import WebClient
@@ -29,13 +29,10 @@ app.config['channels'] = {
     "user" : "UV2PNNLE6",
     "default" : "C014KEBJA1M"
 }
-
-app.config['timezone'] = 'Europe/Prague'
-app.config['tz'] = pytz.timezone(app.config['timezone'])
 app.config['db'] = "data.db"
 
 # scheduler = APScheduler(timezone=app.config['timezone'])
-scheduler = BackgroundScheduler(timezone=app.config['timezone'])
+scheduler = BackgroundScheduler(timezone=timezone())
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
@@ -61,10 +58,14 @@ def fetch_all_places():
             logger.error(f"Error when fetching data for {place.name}")
             logger.exception(e)
 
-        for menu in place.get_menus():
-            # translating is time-consuming, for now translate only dishes for the current day
-            if menu.date == datetime.datetime.now(app.config['tz']).date():
-                menu.translate()
+        try:
+            for menu in place.get_menus():
+                # translating is time-consuming, for now translate only dishes for the current day
+                if menu.date == today():
+                    menu.translate()
+        except Exception as e:
+            logger.error(f"Error when translating menu for {place.name}")
+            logger.exception(e)
 
         places.append(place)
     
@@ -127,25 +128,23 @@ def reload_places(force=False):
     logger.info(f"Reloading places")
     places = fetch_all_places()
     save_var("places", places)
-    save_var("last_update", datetime.datetime.now(app.config['tz']))
+    save_var("last_update", now())
 
     return success()
 
 
 def get_cache_age():
-    now = datetime.datetime.now(app.config['tz'])
+    now_time = now()
     last_update = get_var('last_update')
 
     if not last_update:
         return None
 
-    return now - last_update
+    return now_time - last_update
 
 
 def generate_dish_of_the_day():
-    now = datetime.datetime.now(app.config['tz'])
-
-    overview = get_overview_for_day(now.date())
+    overview = get_overview_for_day(today())
     places_with_dishes = [p for p in overview if p["dishes"]]
 
     if not places_with_dishes:
@@ -190,14 +189,12 @@ def dotd():
 @app.route('/', methods=['GET', 'POST'])
 def index():
     logger.info(f"Page loaded")
-    now = datetime.datetime.now(app.config['tz'])
-
     reload_places()
-    overview = get_overview_for_day(now.date())
+    overview = get_overview_for_day(today())
     last_update = get_var('last_update').strftime("%d %b %Y %H:%M:%S")
     
     return render_template('index.html', 
-        date=now, 
+        date=now(), 
         overview=overview,
         last_update=last_update,
         dotd=get_dish_of_the_day()
@@ -211,8 +208,7 @@ def test_invite():
 
 @app.route('/test_overview', methods=['GET', 'POST'])
 def test_overview():
-    now = datetime.datetime.now(app.config['tz'])
-    overview = get_overview_for_day(now.date())
+    overview = get_overview_for_day(today())
 
     return overview, 200
 
@@ -227,13 +223,6 @@ def test_force_reload():
     return success()
 
 
-def is_holiday():
-    holidays = holidays.CZ()
-    today = datetime.datetime.now(app.config['tz']).date()
-
-    return today in holidays
-
-
 def send_lunch_invite(channel="default"):
     if channel == "default" and is_holiday():
         return
@@ -242,8 +231,7 @@ def send_lunch_invite(channel="default"):
     place_name = dotd["place"]
     dish_name = dotd["dish"]
     
-    now = datetime.datetime.now(app.config['tz'])
-    now_str = now.strftime("%Y-%m-%d")
+    now_str = now().strftime("%Y-%m-%d")
 
     message = [
         {
