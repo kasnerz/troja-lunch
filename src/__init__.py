@@ -9,7 +9,7 @@ import random
 from datetime import timedelta
 from src.utils import now, today, timezone, is_holiday
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, url_for
 from slack_sdk import WebClient
 from flask_apscheduler import APScheduler
 
