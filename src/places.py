@@ -106,6 +106,8 @@ class MenzaTroja(Place):
                 dish_menu = lists[0]
 
             dishes = [Dish(el.text.strip()) for el in dish_menu.find_all("li")]
+            dishes = [x for x in dishes if "svátek" not in x.name]
+            
             m = Menu(dishes, soups=soups, date=menu_date, place=self.name)
             menus.append(m)
 
