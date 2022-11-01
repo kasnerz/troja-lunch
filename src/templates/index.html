@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-<link rel="stylesheet" media="screen" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/custom.css') }}">
-<link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}"">
+<link rel="stylesheet" media="screen" href="./static/css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="./static/css/custom.css">
+<link rel="shortcut icon" href="./static/img/favicon.ico"">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+<script src="./static/js/jquery.min.js"></script>
+<script src="./static/js/popper.min.js"></script>
+<script src="./static/js/bootstrap.min.js"></script>
 <title>troja-lunch</title>
 </head>
 
@@ -52,13 +52,13 @@
           <ul class="list-group list-group-flush">
             <li class="list-group-item"><b>Soup(s)</b></li>
               {% for x in place.soups %}
-              <li class="list-group-item">{{ x.name }}<br><small><i>{{ x.name_en }}</i></small></li>
+              <li class="list-group-item">{{ x.name }}{% if x.price != None %}<span  style="float:right;">{{ x.price }} Kč</span>{% endif %}<br><small><i>{{ x.name_en }}</i></small></li>
               {% endfor %}
           </ul>
           <ul class="list-group list-group-flush">
               <li class="list-group-item"><b>Dishes</b></li>
               {% for x in place.dishes %}
-              <li class="list-group-item">{{ x.name }}<br><small><i>{{ x.name_en }}</i></small></li>
+              <li class="list-group-item">{{ x.name }}{% if x.price != None %}<span  style="float:right;">{{ x.price }} Kč</span>{% endif %}<br><small><i>{{ x.name_en }}</i></small></li>
               {% endfor %}
               <li class="list-group-item"><p class="text-end small"><a href="{{ place.url }}">Source</a></p></li>
           </ul>
@@ -73,7 +73,7 @@
         <div class="dotdbox justify-content-center">
 
           <p><b>{{ dotd.dish }}</b> at <b>{{ dotd.place }}</b></p>
-          <img src="http://ufallab.ms.mff.cuni.cz/~kasner/cfm/{{ date.strftime('%Y-%m-%d') }}.png" class="img-fluid" style="max-width: 80%">
+          <img src="https://ufallab.ms.mff.cuni.cz/~kasner/cfm/{{ date.strftime('%Y-%m-%d') }}.png" class="img-fluid" style="max-width: 80%">
         </div>
       </div>
 
@@ -93,8 +93,22 @@
 
     <hr>
     <div id="footnote">
-        <p><b>Last update: {{ last_update }}.</b></p>
-        <p><i>The URL is only temporary and may change anytime soon.</i></p>
+        <p><b>Last update: <span class="last-update">{{ last_update }}</span>. <span class="reload-span">↻</span></b></p>
     </div>
     
 </body>
+
+
+<script>
+$(".reload-span").click(function(){ 
+    $(this).html('(Updating, this may take a while...)');
+    $.ajax({
+    type: "GET",
+    url: "./test_force_reload",
+    success: function(data) {
+      $(".last-update").html(data["last_update"]);
+      $(".reload-span").html('↻');
+    }
+  })       
+});
+</script>

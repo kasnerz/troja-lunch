@@ -11,6 +11,13 @@ from bs4 import BeautifulSoup as bs
 from collections import defaultdict
 from src.utils import translate
 
+import warnings
+
+# Ignore dateparser warnings regarding pytz
+warnings.filterwarnings(
+    "ignore",
+    message="The localize method is no longer necessary, as this time zone supports the fold attribute",
+)
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
@@ -157,14 +164,23 @@ class BufetTroja(Place):
 
             if self._has_soup(i) and m is not None:
                 soup = re.search(r"(polévka [\w\s,]*\w)", i, flags=re.IGNORECASE).group(1)
+                price = re.search("(\d+),-\s*$", i)
+
+                if price:
+                    price = price.group(1)
 
                 if soup:
-                    soup = Dish(soup.strip().capitalize(), type="soup")
+                    soup = Dish(soup.strip().capitalize(), price=price, type="soup")
                     m.soups.append(soup)
 
             if self._has_food(i) and m is not None:
                 dish = re.search(r"\d+g\s*([^\d]*[^\W\d])", i, flags=re.IGNORECASE).group(1)
-                dish = Dish(dish.strip().capitalize())
+                price = re.search("(\d+),-\s*$", i)
+
+                if price:
+                    price = price.group(1)
+
+                dish = Dish(dish.strip().capitalize(), price=price)
                 m.dishes.append(dish)
 
             if self._is_last(i):
@@ -197,12 +213,12 @@ class CastleRestaurant(Place):
             try:
                 menu_date = datetime.datetime.strptime(menu_date, "%d.%m.%Y").date()
                 
-                dishes = day.find_all("div", {"class" : "col align-self-center flex-grow-1 order-2 order-xs-4"})
+                dishes = day.find_all("div", {"class" : "row pb-3 pt-2 py-md-1"})
                 dishes = [x.text.strip() for x in dishes]
-                dishes = [re.sub(r"\s*[-–—]{0,1}\s*(\d\w{0,1},{0,1}\s*){1,9}\s*$", "", x) for x in dishes] # remove alergens
-                
-                soups = [Dish(dishes[0], type="soup")]
-                dishes = [Dish(x) for x in dishes[1:]]
+                dishes = [re.sub(r"\s*[-–—]{0,1}\s*(\d\w{0,1},{0,1}\s*){1,9}\s*\t", "", x) for x in dishes] # remove alergens
+                dishes = [re.search(r"([^\d]*)?\s*(\d+) Kč\s*$", x) for x in dishes]
+                soups = [Dish(dishes[0].group(1), price=dishes[0].group(2), type="soup")]
+                dishes = [Dish(x.group(1), price=x.group(2)) for x in dishes[1:]]
                 
                 m = Menu(dishes, soups=soups, date=menu_date, place=self.name)
                 menus.append(m)

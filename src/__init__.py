@@ -220,7 +220,8 @@ def test_places():
 @app.route('/test_force_reload', methods=['GET', 'POST'])
 def test_force_reload():
     reload_places(force=True)
-    return success()
+    last_update = get_var('last_update').strftime("%d %b %Y %H:%M:%S")
+    return jsonify(success=True, last_update=last_update)
 
 
 def send_lunch_invite(channel="default"):
@@ -274,7 +275,7 @@ def create_app(*args, **kwargs):
     scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=11, day_of_week="mon,tue,wed,thu,fri")
     scheduler.start()
 
-    random.seed(42)
+    random.seed(314)
     return app
 
 
