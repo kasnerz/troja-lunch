@@ -217,7 +217,9 @@ class CastleRestaurant(Place):
                 dishes = [x.text.strip() for x in dishes]
                 dishes = [re.sub(r"\s*[-–—]{0,1}\s*(\d\w{0,1},{0,1}\s*){1,9}\s*\t", "", x) for x in dishes] # remove alergens
                 dishes = [re.search(r"([^\d]*)?\s*(\d+) Kč\s*$", x) for x in dishes]
-                soups = [Dish(dishes[0].group(1), price=dishes[0].group(2), type="soup")]
+                soup_name = dishes[0].group(1).replace(" –", "")    # remove en dash which get improperly translated
+                soup_name = soup_name[0] + soup_name[1:].lower()
+                soups = [Dish(soup_name, price=dishes[0].group(2), type="soup")]
                 dishes = [Dish(x.group(1), price=x.group(2)) for x in dishes[1:]]
                 
                 m = Menu(dishes, soups=soups, date=menu_date, place=self.name)
