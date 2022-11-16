@@ -271,6 +271,8 @@ def create_app(*args, **kwargs):
     scheduler.add_job(id='fetch', func=lambda: reload_places(force=True), trigger="cron", hour=7, day_of_week="mon,tue,wed,thu,fri")
     # for menus that are added later
     scheduler.add_job(id='fetch_extra', func=lambda: reload_places(force=True), trigger="cron", hour=10, day_of_week="mon,tue,wed,thu,fri")
+    scheduler.add_job(id='fetch_extra2', func=lambda: reload_places(force=True), trigger="cron", hour=11, day_of_week="mon,tue,wed,thu,fri")
+    scheduler.add_job(id='fetch_extra3', func=lambda: reload_places(force=True), trigger="cron", hour=11, minute=30, day_of_week="mon,tue,wed,thu,fri")
     scheduler.add_job(id='dotd', func=generate_dish_of_the_day, trigger="cron", hour=8, day_of_week="mon,tue,wed,thu,fri")
     scheduler.add_job(id='invite', func=send_lunch_invite, trigger="cron", hour=11, day_of_week="mon,tue,wed,thu,fri")
     scheduler.start()
