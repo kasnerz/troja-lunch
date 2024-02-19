@@ -21,7 +21,7 @@ Every workday, the service generates a "dish of the day", which is a random dish
 
 For that dish, a computer-generated image is created using [Stable Diffusion](https://github.com/CompVis/stable-diffusion) prompted with the name of the dish and a couple of other attributes for improving the quality of the image.
 
-The image is generated using a cron job around 9 AM. After the job is finished, the image for the current day should be accessible at `http://ufallab.ms.mff.cuni.cz/~kasner/troja-lunch/YYYY-mm-dd.png` and in the web service interface.
+The image is generated using a cron job around 9 AM. After the job is finished, the image for the current day is accessible at `https://quest.ms.mff.cuni.cz/troja-lunch/static/img/dotd/YYYY-mm-dd.png`.
 
 ## Slackbot
 The service is connected to a Slackbot in the ÚFAL MFF UK workspace called *lunchbot*. 

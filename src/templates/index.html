@@ -73,16 +73,16 @@
         <div class="dotdbox justify-content-center">
 
           <p><b>{{ dotd.dish }}</b> at <b>{{ dotd.place }}</b></p>
-          <img src="https://ufallab.ms.mff.cuni.cz/~kasner/cfm/{{ date.strftime('%Y-%m-%d') }}.png" class="img-fluid" style="max-width: 80%">
+          <!-- <img src="https://ufallab.ms.mff.cuni.cz/~kasner/cfm/{{ date.strftime('%Y-%m-%d') }}.png" class="img-fluid" style="max-width: 80%"> -->
+          <img src="./static/img/dotd/{{ date.strftime('%Y-%m-%d') }}.png" class="img-fluid" style="max-width: 80%">
         </div>
       </div>
 
       <div id="about-pane" class="tab-pane fade" role="tabpanel" tabindex="0">
         <div class="infobox">
         <p>The "dish of the day" image is generated using <a href="https://github.com/CompVis/stable-diffusion">Stable Diffusion</a>, dish names are translated using <a href="https://lindat.mff.cuni.cz/services/translation/docs">CUBBITT API</a>.</p>
-        <p>The app is in beta version, please report any bugs on Github.</p>
+        <p>Please report any bugs on <a href="https://github.com/kasnerz/troja-lunch">Github</a>.</p>
           <!-- <p>If some data is outdated or missing, you can try to use this link for a <a href="{{ url_for('test_force_reload') }}">force reload</a> (note that it may take a while).</p> -->
-        <p>Github: <a href="https://github.com/kasnerz/troja-lunch">https://github.com/kasnerz/troja-lunch</a></p>
         <p>
           © 2022 <a href="https://ufal.mff.cuni.cz/zdenek-kasner/">Zdeněk Kasner</a>, ÚFAL MFF CUNI.
         </p>

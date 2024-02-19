@@ -251,7 +251,7 @@ def send_lunch_invite(channel="default"):
             },
             "accessory": {
                 "type": "image",
-                "image_url": f"http://ufallab.ms.mff.cuni.cz/~kasner/troja-lunch/{now_str}.png",
+                "image_url": f"https://quest.ms.mff.cuni.cz/troja-lunch/static/img/dotd/{now_str}.png",
                 "alt_text": "dish of the day"
             }
         },
