@@ -13,7 +13,7 @@ More places from [this list](https://docs.google.com/document/d/1d9ryeOlgXGPu9qh
 
 The service uses the [CUBBITT API](https://lindat.mff.cuni.cz/services/translation/api/v2/doc) for translating the names of the dishes to English.
 
-The service is currently in beta, please report any bugs on Github or directly to the author.
+Please report any bugs on Github or directly to the author.
 
 
 ## Dish of the day
