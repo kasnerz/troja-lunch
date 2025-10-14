@@ -239,7 +239,7 @@ def send_lunch_invite(channel="default"):
             "type": "section",
             "text": {
               "type": "mrkdwn",
-              "text": f"Today on the <https://tiny.cc/troja-lunch|menu>:\n*{dish_name}* at *{place_name}*\n\nWhere to go? 🍝 _Menza_  🌭 _Bufet_   🏰 _Castle_  🥕 _Elsewhere_\n"
+              "text": f"Today on the <https://tiny.cc/troja-lunch|menu>:\n*{dish_name}* at *{place_name}*\n\nWhere to go? 🍝 _Menza_  🌭 _Bufet_   🏰 _Castle_  🍱 _I have my lunch_\n"
             },
             "accessory": {
                 "type": "image",
