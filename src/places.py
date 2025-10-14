@@ -102,17 +102,26 @@ class MenzaTroja(Place):
             menu_date = dateparser.parse(menu_date).date()
         
             menu_date_detail = day.find("div")
+
+            dish_types = [ x.text.strip() for x in menu_date_detail.find_all("h2") ]
             lists = menu_date_detail.find_all("ul")
 
-            if len(lists) == 2:  # we have a soup
-                soups = [Dish(lists[0].find("li").text.strip(), type="soup")]
-                dish_menu = lists[1]
-            elif len(lists) == 1:
+            # find "Polévka" in dish types
+            soups_index = None
+            for i, t in enumerate(dish_types):
+                if t == "Polévka":
+                    soups_index = i
+                    break
+
+            if soups_index is None:
                 logger.warning(f"No soup found in menza on {menu_date}")
                 soups = []
-                dish_menu = lists[0]
+                dish_menu = [x for list in lists for x in list.find_all("li")]
+            else:
+                soups = [Dish(lists[soups_index].find("li").text.strip(), type="soup")]
+                dish_menu = [x for i, list in enumerate(lists) if i != soups_index for x in list.find_all("li")]
 
-            dishes = [Dish(el.text.strip()) for el in dish_menu.find_all("li")]
+            dishes = [Dish(el.text.strip()) for el in dish_menu]
             dishes = [x for x in dishes if "svátek" not in x.name]
             
             m = Menu(dishes, soups=soups, date=menu_date, place=self.name)
