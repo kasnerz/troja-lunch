@@ -27,3 +27,29 @@ The image is generated using a cron job around 9 AM. After the job is finished, 
 The service is connected to a Slackbot in the ÚFAL MFF UK workspace called *lunchbot*. 
 
 The bot is programmed to send regular posts to the *cfm-troja* channel, including the dish of the day and the invitations for lunch.
+
+## Service Deployment
+
+The application is deployed as a systemd service to ensure it runs automatically on startup.
+
+### Configuration
+- **Service file**: `/etc/systemd/system/troja-lunch.service`
+- **Environment variables**: Managed in `.env` (contains `SLACK_SIGNING_SECRET`, `SLACK_BOT_TOKEN`)
+- **Virtual environment**: `/home/kasner/virtualenv/lunch`
+
+### Management Commands
+To manage the service, use standard systemctl commands:
+
+```bash
+# Check status
+sudo systemctl status troja-lunch
+
+# Restart service
+sudo systemctl restart troja-lunch
+
+# View logs
+tail -f run.log
+# or
+journalctl -u troja-lunch -f
+```
+

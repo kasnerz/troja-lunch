@@ -1,2 +1,8 @@
 __pycache__/
 *.py[cod]
+.env
+.venv
+data.db
+run.log
+src/static/img/dotd/
+troja-lunch.log

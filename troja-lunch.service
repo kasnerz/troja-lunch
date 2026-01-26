@@ -1,0 +1,16 @@
+[Unit]
+Description=Troja Lunch Gunicorn Service
+After=network.target
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/home/kasner/troja-lunch
+EnvironmentFile=/home/kasner/troja-lunch/.env
+ExecStart=/home/kasner/virtualenv/lunch/bin/gunicorn 'app:app' -b 0.0.0.0:80
+StandardOutput=append:/home/kasner/troja-lunch/run.log
+StandardError=append:/home/kasner/troja-lunch/run.log
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
