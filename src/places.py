@@ -149,8 +149,12 @@ class BufetTroja(Place):
         return re.search(r"\d{1,2}\.\s*\d{1,2}\.\s*\d{4}", s)
     
     def _get_monday_date(self, s):
-        date_friday = re.search(r"(\d{1,2}\.\s*\d{1,2}\.\s*\d{4})[^\d]*$", s)
-        date_friday = datetime.datetime.strptime(date_friday.group(1), "%d.%m.%Y").date()
+        date_friday = re.search(r"(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})[^\d]*$", s)
+        date_friday = datetime.date(
+            int(date_friday.group(3)),
+            int(date_friday.group(2)),
+            int(date_friday.group(1)),
+        )
         return date_friday - datetime.timedelta(days=4)
 
     def _get_weekday(self, s):
