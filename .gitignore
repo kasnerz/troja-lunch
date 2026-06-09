@@ -7,3 +7,5 @@ data.db
 run.log
 src/static/img/dotd/
 troja-lunch.log
+*tmp.pdf
+data.db.*
