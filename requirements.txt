@@ -10,3 +10,5 @@ gunicorn==20.1.0
 pdftotext
 holidays
 Werkzeug==2.2.2
+pydantic==2.13.4
+openai==2.41.0
