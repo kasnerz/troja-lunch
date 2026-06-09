@@ -138,12 +138,30 @@ class BufetTroja(Place):
         self.name = "Bufet Troja"
         self.url = "https://aurora.troja.mff.cuni.cz/pavlu/bufet.pdf"
         self.tab_id = "bufet"
-    
+        self._week_days = ["pondělí", "úterý", "středa", "čtvrtek", "pátek"]
     def _has_food(self, s):
-        return re.search(r"^\s*(\d){2,4}g ", s)     # contains weight
+        return re.search(r"\s*(\d){2,4}\s*gr ", s)     # contains weight
+    
+    def _has_price(self, s):
+        return re.search(r"\s\d{2,3},-", s)
 
     def _has_date(self, s):
         return re.search(r"\d{1,2}\.\s*\d{1,2}\.\s*\d{4}", s)
+    
+    def _get_monday_date(self, s):
+        date_friday = re.search(r"(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})[^\d]*$", s)
+        date_friday = datetime.date(
+            int(date_friday.group(3)),
+            int(date_friday.group(2)),
+            int(date_friday.group(1)),
+        )
+        return date_friday - datetime.timedelta(days=4)
+
+    def _get_weekday(self, s):
+        for day in self._week_days:
+            if day in s.lower():
+                return day
+        return None
 
     def _has_soup(self, s):
         return "polévka" in s.lower()
@@ -162,17 +180,24 @@ class BufetTroja(Place):
         menus = []
         m = None
         
+        monday_date = datetime.datetime.fromtimestamp(0) # fallback
+        food_first_line = "" # buffer for food names that are split into multiple lines
+
         for i in text:
             if self._has_date(i):
+                monday_date = self._get_monday_date(i)
+                continue
+            
+            extracted_weekday = self._get_weekday(i)
+            if extracted_weekday is not None:
                 if m is not None:
                     menus.append(m)
 
-                menu_date = re.search(r"\d{1,2}\.\s*\d{1,2}\.\s*\d{4}", i).group(0)
-                current_date = datetime.datetime.strptime(menu_date, "%d.%m.%Y").date()
-                m = Menu(dishes=[], soups=[], date=current_date, place=self.name)
+                menu_date = monday_date + datetime.timedelta(days=self._week_days.index(extracted_weekday))
+                m = Menu(dishes=[], soups=[], date=menu_date, place=self.name)
 
             if self._has_soup(i) and m is not None:
-                soup = re.search(r"(polévka [\w\s,]*\w)", i, flags=re.IGNORECASE).group(1)
+                soup = re.search(r"(polévka [\w\s,]*\w)\s+\d+,-", i, flags=re.IGNORECASE).group(1)
                 price = re.search("(\d+),-\s*$", i)
 
                 if price:
@@ -183,14 +208,23 @@ class BufetTroja(Place):
                     m.soups.append(soup)
 
             if self._has_food(i) and m is not None:
-                dish = re.search(r"\d+g\s*([^\d]*[^\W\d])", i, flags=re.IGNORECASE).group(1)
+                dish = re.search(r"\d+\s*gr\s*([^\d]*[^\W\d])", i, flags=re.IGNORECASE).group(1)
+
+                if self._has_price(i):
+                    price = re.search("(\d+),-\s*$", i)
+
+                    dish = Dish(dish.strip().capitalize(), price=price.group(1))
+                    m.dishes.append(dish)
+                
+                else: # food was probably split into multiple lines
+                    food_first_line = dish.strip()
+            elif food_first_line != "" and self._has_price(i):
                 price = re.search("(\d+),-\s*$", i)
+                food_second_line = re.search(r"([^\d]*[^\W\d])\s*\d+,-\s*$", i, flags=re.IGNORECASE).group(1)
 
-                if price:
-                    price = price.group(1)
-
-                dish = Dish(dish.strip().capitalize(), price=price)
+                dish = Dish((food_first_line + " " + food_second_line.strip()).capitalize(), price=price.group(1))
                 m.dishes.append(dish)
+                food_first_line = ""
 
             if self._is_last(i):
                 break
@@ -242,10 +276,9 @@ class CastleRestaurant(Place):
         
 
 # if __name__ == "__main__":
-    # today = datetime.datetime.now()
-
-    # place = MenzaTroja()
-    # place = BufetTroja()
-    # place = CastleRestaurant()
-    # place.fetch_menus()
-    # print(place.get_menus())
+#     today = datetime.datetime.now()
+#     place = BufetTroja()
+#     place = MenzaTroja()
+#     place = CastleRestaurant()
+#     place.fetch_menus()
+#     print("\n".join([str(menu) for menu in place.get_menus()]))
