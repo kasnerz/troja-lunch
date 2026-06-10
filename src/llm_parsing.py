@@ -1,5 +1,4 @@
 from src.type_defs import Place
-# from type_defs import Place
 from openai import OpenAI
 import os
 

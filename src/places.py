@@ -13,8 +13,6 @@ import json
 
 from src.llm_parsing import llm_parse_menu
 from src.type_defs import Dish, Menu, Place, parse_menus_from_dict
-# from llm_parsing import llm_parse_menu
-# from type_defs import Dish, Menu, Place, parse_menus_from_dict
 
 import warnings
 
@@ -231,8 +229,8 @@ class CastleRestaurant(Place):
                 dishes = [re.search(r"([^\d]*)?\s*(\d+) Kč\s*$", x) for x in dishes]
                 soup_name = dishes[0].group(1).replace(" –", "")    # remove en dash which get improperly translated
                 soup_name = soup_name[0] + soup_name[1:].lower()
-                soups = [Dish(soup_name, price=dishes[0].group(2), type="soup", logger=logger)]
-                dishes = [Dish(x.group(1), price=x.group(2), logger=logger) for x in dishes[1:]]
+                soups = [Dish(soup_name.strip(), price=dishes[0].group(2), type="soup", logger=logger)]
+                dishes = [Dish(x.group(1).strip(), price=x.group(2), logger=logger) for x in dishes[1:]]
                 
                 m = Menu(dishes, soups=soups, date=menu_date, place=self.name, logger=logger)
                 menus.append(m)
@@ -247,7 +245,7 @@ class CastleRestaurant(Place):
 if __name__ == "__main__":
     today = datetime.datetime.now()
     place = BufetTroja()
-    # place = MenzaTroja()
-    # place = CastleRestaurant()
+    place = MenzaTroja()
+    place = CastleRestaurant()
     place.fetch_menus()
     print("\n".join([str(menu) for menu in place.get_menus()]))

@@ -1,7 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Literal
 from src.utils import translate
-# from utils import translate
 import datetime
 
 def parse_dish_from_dict(dish_dict):
@@ -33,8 +32,9 @@ class Dish(BaseModel):
         try:
             self.name_en = translate(self.name)
         except Exception as e:
-            self.logger.error(f"Cannot translate dish {self.name}")
-            self.logger.exception(e)
+            if self.logger:
+                self.logger.error(f"Cannot translate dish {self.name}")
+                self.logger.exception(e)
 
     def __str__(self):
         return str(self.__dict__)
@@ -56,19 +56,22 @@ class Menu(BaseModel):
         self.logger = logger
     
     def translate(self):
-        self.logger.info(f"Translating menu for {self.place}")
+        if self.logger:
+            self.logger.info(f"Translating menu for {self.place}")
 
         for x in self.dishes:
             try:
                 x.translate()
             except Exception as e:
-                self.logger.exception(e)
+                if self.logger:
+                    self.logger.exception(e)
 
         for x in self.soups:
             try:
                 x.translate()
             except Exception as e:
-                self.logger.exception(e)
+                if self.logger:
+                    self.logger.exception(e)
 
         self.is_translated = True
 
