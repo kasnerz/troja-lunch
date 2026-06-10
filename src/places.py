@@ -97,6 +97,9 @@ class BufetTroja(Place):
         except Exception as e:
             logger.exception("LLM parsing failed for Bufet Troja!")
             logger.exception(e)
+            return False
+        
+        return True
 
 class BufetTrojaOld(Place):
     def __init__(self):
