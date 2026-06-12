@@ -35,7 +35,11 @@ class MenzaTroja(Place):
         self.tab_id = "menza"
 
     def fetch_menus(self):
-        rss = requests.get(self.url).content.decode("utf-8")
+        rss = requests.get(self.url, timeout=20)
+        if rss.status_code != 200:
+            logger.error(f"Failed to fetch menu for {self.name}! Status code: {rss.status_code}")
+            return False
+        rss = rss.content.decode("utf-8")
         rss = html.unescape(rss)
         content = bs(rss, features="xml")
         
@@ -83,7 +87,10 @@ class BufetTroja(Place):
         self.tab_id = "bufet"
 
     def fetch_menus(self):
-        pdf = requests.get(self.url)
+        pdf = requests.get(self.url, timeout=20)
+        if pdf.status_code != 200:
+            logger.error(f"Failed to fetch menu for {self.name}! Status code: {pdf.status_code}")
+            return False
 
         with open('bufet_tmp.pdf', 'wb') as f:
             f.write(pdf.content)
@@ -139,7 +146,11 @@ class BufetTrojaOld(Place):
         return "Dále nabízíme" in s
 
     def fetch_menus(self):
-        pdf = requests.get(self.url)
+        pdf = requests.get(self.url, timeout=20)
+
+        if pdf.status_code != 200:
+            logger.error(f"Failed to fetch menu for {self.name}! Status code: {pdf.status_code}")
+            return False
 
         with open('bufet_tmp.pdf', 'wb') as f:
             f.write(pdf.content)
@@ -215,7 +226,11 @@ class CastleRestaurant(Place):
         self.tab_id = "castle"
     
     def fetch_menus(self):
-        rss = requests.get(self.url).content.decode("utf-8")
+        rss = requests.get(self.url, timeout=20)
+        if rss.status_code != 200:
+            logger.error(f"Failed to fetch menu for {self.name}! Status code: {rss.status_code}")
+            return False
+        rss = rss.content.decode("utf-8")
         html = bs(rss, "lxml")
         menus = []
 
