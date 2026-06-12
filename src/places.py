@@ -9,7 +9,10 @@ import os
 import dateparser
 from bs4 import BeautifulSoup as bs
 from collections import defaultdict
-from src.utils import translate
+import json
+
+from src.llm_parsing import llm_parse_menu
+from src.type_defs import Dish, Menu, Place, parse_menus_from_dict
 
 import warnings
 
@@ -22,67 +25,8 @@ warnings.filterwarnings(
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO, datefmt='%H:%M:%S')
 logger = logging.getLogger(__name__)
 
-class Place:
-    def __init__(self):
-        self.menus = []
-
-    def get_menus(self):
-        return self.menus
-
-    def fetch_menus(self):
-        raise NotImplementedError
 
 
-class Menu:
-    def __init__(self, dishes, soups, date=None, place=None):
-        self.dishes = dishes
-        self.soups = soups        # maybe not that beautiful
-        self.date = date
-        self.place = place
-        self.is_translated = False
-    
-    def translate(self):
-        logger.info(f"Translating menu for {self.place}")
-
-        for x in self.dishes:
-            try:
-                x.translate()
-            except Exception as e:
-                logger.exception(e)
-
-        for x in self.soups:
-            try:
-                x.translate()
-            except Exception as e:
-                logger.exception(e)
-
-        self.is_translated = True
-
-    def __str__(self):
-        return str(self.__dict__)
-
-
-class Dish:
-    def __init__(self, name, type="main", price=None):
-        self.name = name
-        self.name_en = name
-        self.type = type
-        self.price = price
-    
-    def translate(self):
-        try:
-            self.name_en = translate(self.name)
-        except Exception as e:
-            logger.error(f"Cannot translate dish {self.name}")
-            logger.exception(e)
-
-    def __str__(self):
-        return str(self.__dict__)
-
-    def __repr__(self):
-        return str(self.__dict__)
-
-    
 class MenzaTroja(Place):
     def __init__(self):
         super().__init__()
@@ -118,21 +62,46 @@ class MenzaTroja(Place):
                 soups = []
                 dish_menu = [x for list in lists for x in list.find_all("li")]
             else:
-                soups = [Dish(lists[soups_index].find("li").text.strip(), type="soup")]
+                soups = [Dish(lists[soups_index].find("li").text.strip(), type="soup", logger=logger)]
                 dish_menu = [x for i, list in enumerate(lists) if i != soups_index for x in list.find_all("li")]
 
-            dishes = [Dish(el.text.strip()) for el in dish_menu]
+            dishes = [Dish(el.text.strip(), logger=logger) for el in dish_menu]
             dishes = [x for x in dishes if "svátek" not in x.name]
             
-            m = Menu(dishes, soups=soups, date=menu_date, place=self.name)
+            m = Menu(dishes, soups=soups, date=menu_date, place=self.name, logger=logger)
             menus.append(m)
 
         self.menus = menus
         return True
 
                 
-
 class BufetTroja(Place):
+    def __init__(self):
+        super().__init__()
+        self.name = "Bufet Troja"
+        self.url = "https://aurora.troja.mff.cuni.cz/pavlu/bufet.pdf"
+        self.tab_id = "bufet"
+
+    def fetch_menus(self):
+        pdf = requests.get(self.url)
+
+        with open('bufet_tmp.pdf', 'wb') as f:
+            f.write(pdf.content)
+
+        text = textract.process('bufet_tmp.pdf', method='pdftotext', layout=True)
+        text = text.decode("utf-8")
+
+        try:
+            menu = json.loads(llm_parse_menu(text, place_name=self.name))
+            self.menus = parse_menus_from_dict(menu, logger=logger)
+        except Exception as e:
+            logger.exception("LLM parsing failed for Bufet Troja!")
+            logger.exception(e)
+            return False
+        
+        return True
+
+class BufetTrojaOld(Place):
     def __init__(self):
         super().__init__()
         self.name = "Bufet Troja"
@@ -176,7 +145,8 @@ class BufetTroja(Place):
             f.write(pdf.content)
 
         text = textract.process('bufet_tmp.pdf', method='pdftotext', layout=True)
-        text = text.decode("utf-8").split("\n")
+        text = text.decode("utf-8")
+        text = text.split("\n")
         menus = []
         m = None
         
@@ -194,7 +164,7 @@ class BufetTroja(Place):
                     menus.append(m)
 
                 menu_date = monday_date + datetime.timedelta(days=self._week_days.index(extracted_weekday))
-                m = Menu(dishes=[], soups=[], date=menu_date, place=self.name)
+                m = Menu(dishes=[], soups=[], date=menu_date, place=self.name, logger=logger)
 
             if self._has_soup(i) and m is not None:
                 soup = re.search(r"(polévka [\w\s,]*\w)\s+\d+,-", i, flags=re.IGNORECASE).group(1)
@@ -204,7 +174,7 @@ class BufetTroja(Place):
                     price = price.group(1)
 
                 if soup:
-                    soup = Dish(soup.strip().capitalize(), price=price, type="soup")
+                    soup = Dish(soup.strip().capitalize(), price=price, type="soup", logger=logger)
                     m.soups.append(soup)
 
             if self._has_food(i) and m is not None:
@@ -213,7 +183,7 @@ class BufetTroja(Place):
                 if self._has_price(i):
                     price = re.search("(\d+),-\s*$", i)
 
-                    dish = Dish(dish.strip().capitalize(), price=price.group(1))
+                    dish = Dish(dish.strip().capitalize(), price=price.group(1), logger=logger)
                     m.dishes.append(dish)
                 
                 else: # food was probably split into multiple lines
@@ -222,7 +192,7 @@ class BufetTroja(Place):
                 price = re.search("(\d+),-\s*$", i)
                 food_second_line = re.search(r"([^\d]*[^\W\d])\s*\d+,-\s*$", i, flags=re.IGNORECASE).group(1)
 
-                dish = Dish((food_first_line + " " + food_second_line.strip()).capitalize(), price=price.group(1))
+                dish = Dish((food_first_line + " " + food_second_line.strip()).capitalize(), price=price.group(1), logger=logger)
                 m.dishes.append(dish)
                 food_first_line = ""
 
@@ -262,10 +232,10 @@ class CastleRestaurant(Place):
                 dishes = [re.search(r"([^\d]*)?\s*(\d+) Kč\s*$", x) for x in dishes]
                 soup_name = dishes[0].group(1).replace(" –", "")    # remove en dash which get improperly translated
                 soup_name = soup_name[0] + soup_name[1:].lower()
-                soups = [Dish(soup_name, price=dishes[0].group(2), type="soup")]
-                dishes = [Dish(x.group(1), price=x.group(2)) for x in dishes[1:]]
+                soups = [Dish(soup_name.strip(), price=dishes[0].group(2), type="soup", logger=logger)]
+                dishes = [Dish(x.group(1).strip(), price=x.group(2), logger=logger) for x in dishes[1:]]
                 
-                m = Menu(dishes, soups=soups, date=menu_date, place=self.name)
+                m = Menu(dishes, soups=soups, date=menu_date, place=self.name, logger=logger)
                 menus.append(m)
             except Exception as e:
                 logger.exception(e)
@@ -275,10 +245,10 @@ class CastleRestaurant(Place):
         return True
         
 
-# if __name__ == "__main__":
-#     today = datetime.datetime.now()
-#     place = BufetTroja()
-#     place = MenzaTroja()
-#     place = CastleRestaurant()
-#     place.fetch_menus()
-#     print("\n".join([str(menu) for menu in place.get_menus()]))
+if __name__ == "__main__":
+    today = datetime.datetime.now()
+    place = BufetTroja()
+    place = MenzaTroja()
+    place = CastleRestaurant()
+    place.fetch_menus()
+    print("\n".join([str(menu) for menu in place.get_menus()]))
