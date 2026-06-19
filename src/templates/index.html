@@ -70,15 +70,19 @@
 
 
       <div id="dotd-pane" class="tab-pane fade" role="tabpanel" tabindex="0">
-        <div class="dotdbox justify-content-center">
-
-          <p><b>{{ dotd.dish }}</b> at <b>{{ dotd.place }}</b></p>
-          <!-- <img src="https://ufallab.ms.mff.cuni.cz/~kasner/cfm/{{ date.strftime('%Y-%m-%d') }}.png" class="img-fluid" style="max-width: 80%"> -->
-          <img src="./static/img/dotd/{{ date.strftime('%Y-%m-%d') }}.png" class="img-fluid" style="max-width: 80%">
-          <p>
-            <b>Poem about the dish:<br></b>
-            <i>{{ dotd.poem | safe }}</i>
-          </p>
+        <div class="dotdbox">
+          <p class="mb-3"><b>{{ dotd.dish }}</b> at <b>{{ dotd.place }}</b></p>
+          <div class="row g-3 align-items-start">
+            <div class="col-12 col-md-6">
+              <img src="./static/img/dotd/{{ date.strftime('%Y-%m-%d') }}.png" class="img-fluid" alt="Dish of the day image">
+            </div>
+            <div class="col-12 col-md-6">
+              <p class="mb-0">
+                <b>Poem about the dish:</b><br>
+                <i>{{ dotd.poem | safe }}</i>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -34,7 +34,7 @@ The application is deployed as a systemd service to ensure it runs automatically
 
 ### Configuration
 - **Service file**: `/etc/systemd/system/troja-lunch.service`
-- **Environment variables**: Managed in `.env` (contains `SLACK_SIGNING_SECRET`, `SLACK_BOT_TOKEN`, and `E_INFRA_API_TOKEN`)
+- **Environment variables**: Managed in `.env` (contains `SLACK_SIGNING_SECRET`, `SLACK_BOT_TOKEN`, `E_INFRA_API_TOKEN`, and `POEM_API`)
 - **Virtual environment**: `/home/kasner/virtualenv/lunch`
 
 ### Management Commands
