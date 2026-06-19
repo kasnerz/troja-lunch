@@ -96,6 +96,7 @@ The output should follow this JSON schema:
                 "is_translated": {{
                     "title": "Is Translated",
                     "type": "boolean"
+                    "description": "True if `name_en` field of all dishes and soups is filled, false otherwise."
                 }}
             }},
             "required": [

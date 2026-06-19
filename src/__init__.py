@@ -69,7 +69,7 @@ def fetch_all_places():
         try:
             for menu in place.get_menus():
                 # translating is time-consuming, for now translate only dishes for the current day
-                if menu.date == today():
+                if menu.date == today() and not menu.is_translated:
                     menu.translate()
         except Exception as e:
             logger.error(f"Error when translating menu for {place.name}")
@@ -167,10 +167,24 @@ def generate_dish_of_the_day():
 
     dish = random.choice(place["dishes"])
     dish_name = dish["name_en"] or dish["name"]
+    dish_name_cs = dish["name"] or dish["name_en"]
+
+    logger.info("Requesting poem for dish of the day")
+    poem = requests.get(f"{os.getenv('POEM_API')}gen?modelspec=tm&title={dish_name_cs}&accept=txt")
+    logger.info(f"Poem generated.")
+
+    try:
+        poem = poem.text.split("Anonym [vygenerováno]:\n")[1]
+        poem = poem.replace("\n", "<br>\n")
+    except Exception as e:
+        logger.error("Error when parsing poem.")
+        logger.exception(e)
+        poem = "No poem available :("
 
     dotd = {
         "place" : place_name,
-        "dish" : dish_name
+        "dish" : dish_name,
+        "poem" : poem
     }
     save_var("dish_of_the_day", dotd)
     logger.info(f"Generated dish of the day: {dish_name} at {place_name}")
