@@ -174,7 +174,7 @@ def generate_dish_of_the_day():
     logger.info(f"Poem generated.")
 
     try:
-        poem = poem.text.split("Anonym [vygenerováno]:\n")[1]
+        poem = poem.text.split("[vygenerováno]:\n")[1]
         poem = poem.replace("\n", "<br>\n")
     except Exception as e:
         logger.error("Error when parsing poem.")
